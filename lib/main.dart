@@ -25,7 +25,7 @@ class NotaApp extends StatelessWidget {
             'Nota',
             style: TextStyle(
               fontSize: 32,
-              color: Color(0xFFC8A96E),
+              color: Color.fromARGB(255, 129, 110, 200),
             ),
           ),
         ),

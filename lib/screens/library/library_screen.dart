@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/song.dart';
 import '../../theme/app_theme.dart';
+import 'song_detail_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   final String bandId;
@@ -72,6 +73,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   ),
                 ),
               ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SongDetailScreen(song: song),
+                  ),
+                );
+              },
             ),
           );
         },

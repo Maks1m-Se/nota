@@ -3,7 +3,7 @@ import '../../models/setlist.dart';
 import '../../models/song_slot.dart';
 import '../../theme/app_theme.dart';
 import '../../models/song.dart';
-import '../live/live_screen.dart';
+import 'setlist_detail_screen.dart';
 
 class SetlistsScreen extends StatefulWidget {
   final String bandId;
@@ -89,7 +89,7 @@ class _SetlistsScreenState extends State<SetlistsScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => LiveScreen(
+                    builder: (context) => SetlistDetailScreen(
                       setlist: setlist,
                       songs: _songs,
                     ),

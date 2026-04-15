@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/band.dart';
 import '../../theme/app_theme.dart';
 import '../library/library_screen.dart';
+import '../setlists/setlists_screen.dart';
 
 class BandHomeScreen extends StatelessWidget {
   final Band band;
@@ -51,7 +52,14 @@ class BandHomeScreen extends StatelessWidget {
               icon: Icons.list,
               label: 'Setlisten',
               subtitle: 'Setlisten verwalten',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SetlistsScreen(bandId: band.id),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
             _NavCard(

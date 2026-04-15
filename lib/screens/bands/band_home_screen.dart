@@ -3,6 +3,7 @@ import '../../models/band.dart';
 import '../../theme/app_theme.dart';
 import '../library/library_screen.dart';
 import '../setlists/setlists_screen.dart';
+import '../gigs/gigs_screen.dart';
 
 class BandHomeScreen extends StatelessWidget {
   final Band band;
@@ -66,7 +67,14 @@ class BandHomeScreen extends StatelessWidget {
               icon: Icons.calendar_today,
               label: 'Gigs',
               subtitle: 'Auftritte und Events',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GigsScreen(bandId: band.id),
+                  ),
+                );
+              },
             ),
           ],
         ),

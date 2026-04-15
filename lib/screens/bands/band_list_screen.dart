@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/band.dart';
 import '../../theme/app_theme.dart';
+import 'band_home_screen.dart';
 
 class BandListScreen extends StatefulWidget {
   const BandListScreen({super.key});
@@ -58,6 +59,14 @@ class _BandListScreenState extends State<BandListScreen> {
                 Icons.chevron_right,
                 color: AppTheme.textMuted,
               ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BandHomeScreen(band: band),
+                  ),
+                );
+              },
             ),
           );
         },

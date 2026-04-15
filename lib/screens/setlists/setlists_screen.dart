@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/setlist.dart';
 import '../../models/song_slot.dart';
 import '../../theme/app_theme.dart';
+import '../../models/song.dart';
+import '../live/live_screen.dart';
 
 class SetlistsScreen extends StatefulWidget {
   final String bandId;
@@ -33,9 +35,16 @@ class _SetlistsScreenState extends State<SetlistsScreen> {
     ),
     Setlist(
       id: '3',
-      name: 'Standard Abend',
+      name: 'Standard Evening',
       slots: [],
     ),
+  ];
+  final List<Song> _songs = [
+    Song(id: '1', title: 'Johnny B. Goode', artist: 'Chuck Berry', key: 'A', bpm: 130),
+    Song(id: '2', title: 'Blue Suede Shoes', artist: 'Elvis Presley', key: 'C', bpm: 120),
+    Song(id: '3', title: 'Rock Around the Clock', artist: 'Bill Haley', key: 'D', bpm: 175),
+    Song(id: '4', title: 'Jailhouse Rock', artist: 'Elvis Presley', key: 'E', bpm: 168),
+    Song(id: '5', title: 'Peggy Sue', artist: 'Buddy Holly', key: 'A', bpm: 160),
   ];
 
   @override
@@ -76,7 +85,17 @@ class _SetlistsScreenState extends State<SetlistsScreen> {
                 Icons.chevron_right,
                 color: AppTheme.textMuted,
               ),
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LiveScreen(
+                      setlist: setlist,
+                      songs: _songs,
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },

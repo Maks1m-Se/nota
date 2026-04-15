@@ -51,7 +51,7 @@ class BandHomeScreen extends StatelessWidget {
             const SizedBox(height: 12),
             _NavCard(
               icon: Icons.list,
-              label: 'Setlisten',
+              label: 'Setlists',
               subtitle: 'Manage setlists',
               onTap: () {
                 Navigator.push(

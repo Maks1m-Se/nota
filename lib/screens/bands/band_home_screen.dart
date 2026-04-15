@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/band.dart';
 import '../../theme/app_theme.dart';
+import '../library/library_screen.dart';
 
 class BandHomeScreen extends StatelessWidget {
   final Band band;
@@ -36,7 +37,14 @@ class BandHomeScreen extends StatelessWidget {
               icon: Icons.library_music,
               label: 'Library',
               subtitle: 'Alle Songs der Band',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LibraryScreen(bandId: band.id),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
             _NavCard(

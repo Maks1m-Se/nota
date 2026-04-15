@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/band.dart';
 import '../../theme/app_theme.dart';
-import 'band_home_screen.dart';
+import 'band_scaffold.dart';
 
 class BandListScreen extends StatefulWidget {
   const BandListScreen({super.key});
@@ -63,7 +63,7 @@ class _BandListScreenState extends State<BandListScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BandHomeScreen(band: band),
+                    builder: (context) => BandScaffold(band: band),
                   ),
                 );
               },

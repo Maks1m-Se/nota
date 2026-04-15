@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
+import 'screens/bands/band_list_screen.dart';
 
 class NotaApp extends StatelessWidget {
   const NotaApp({super.key});
@@ -10,17 +11,7 @@ class NotaApp extends StatelessWidget {
       title: 'Nota',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'Nota',
-            style: TextStyle(
-              fontSize: 32,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-        ),
-      ),
+      home: const BandListScreen(),
     );
   }
 }

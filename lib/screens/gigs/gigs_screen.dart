@@ -62,7 +62,7 @@ class _GigsScreenState extends State<GigsScreen> {
         children: [
           if (upcoming.isNotEmpty) ...[
             const Text(
-              'KOMMEND',
+              'UPCOMING',
               style: TextStyle(
                 color: AppTheme.textMuted,
                 fontSize: 11,
@@ -75,7 +75,7 @@ class _GigsScreenState extends State<GigsScreen> {
           ],
           if (past.isNotEmpty) ...[
             const Text(
-              'VERGANGEN',
+              'PAST',
               style: TextStyle(
                 color: AppTheme.textMuted,
                 fontSize: 11,
@@ -151,10 +151,10 @@ class _DateBox extends StatelessWidget {
   Widget build(BuildContext context) {
     if (date == null) return const SizedBox(width: 48);
 
-    const months = [
-      'JAN', 'FEB', 'MRZ', 'APR', 'MAI', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ'
-    ];
+  const months = [
+    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+  ];
 
     return Container(
       width: 48,

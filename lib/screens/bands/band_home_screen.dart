@@ -38,7 +38,7 @@ class BandHomeScreen extends StatelessWidget {
             _NavCard(
               icon: Icons.library_music,
               label: 'Library',
-              subtitle: 'Alle Songs der Band',
+              subtitle: 'All songs',
               onTap: () {
                 Navigator.push(
                   context,
@@ -52,7 +52,7 @@ class BandHomeScreen extends StatelessWidget {
             _NavCard(
               icon: Icons.list,
               label: 'Setlisten',
-              subtitle: 'Setlisten verwalten',
+              subtitle: 'Manage setlists',
               onTap: () {
                 Navigator.push(
                   context,
@@ -66,7 +66,7 @@ class BandHomeScreen extends StatelessWidget {
             _NavCard(
               icon: Icons.calendar_today,
               label: 'Gigs',
-              subtitle: 'Auftritte und Events',
+              subtitle: 'Events & shows',
               onTap: () {
                 Navigator.push(
                   context,

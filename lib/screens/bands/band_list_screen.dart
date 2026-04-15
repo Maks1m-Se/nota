@@ -21,7 +21,7 @@ class _BandListScreenState extends State<BandListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Meine Bands'),
+        title: const Text('My Bands'),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),

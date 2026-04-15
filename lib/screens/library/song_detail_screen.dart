@@ -36,7 +36,7 @@ class SongDetailScreen extends StatelessWidget {
 
             // Notizen
             const Text(
-              'Notizen',
+              'Notes',
               style: TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 12,
@@ -53,7 +53,7 @@ class SongDetailScreen extends StatelessWidget {
                 border: Border.all(color: AppTheme.textMuted.withValues(alpha: 0.3)),
               ),
               child: Text(
-                song.notes.isNotEmpty ? song.notes : 'Keine Notizen vorhanden.',
+                song.notes.isNotEmpty ? song.notes : 'No notes yet.',
                 style: const TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 14,
@@ -65,7 +65,7 @@ class SongDetailScreen extends StatelessWidget {
 
             // Zeichnung Platzhalter
             const Text(
-              'Zeichnung',
+              'Drawing',
               style: TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 12,
@@ -86,7 +86,7 @@ class SongDetailScreen extends StatelessWidget {
               ),
               child: const Center(
                 child: Text(
-                  'Zeichenfläche (S Pen)',
+                  'Drawing area (S Pen)',
                   style: TextStyle(color: AppTheme.textMuted),
                 ),
               ),

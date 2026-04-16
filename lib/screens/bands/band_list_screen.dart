@@ -1,33 +1,26 @@
 import 'package:flutter/material.dart';
-import '../../models/band.dart';
+import 'package:provider/provider.dart';
+import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import 'band_scaffold.dart';
 
-class BandListScreen extends StatefulWidget {
+class BandListScreen extends StatelessWidget {
   const BandListScreen({super.key});
 
   @override
-  State<BandListScreen> createState() => _BandListScreenState();
-}
-
-class _BandListScreenState extends State<BandListScreen> {
-  final List<Band> _bands = [
-    Band(id: '1', name: 'PRIMEBEATS', genre: 'Rockabilly / 50s Rock\'n\'Roll'),
-    Band(id: '2', name: 'Jukebox22', genre: 'Rockabilly / 50s Rock\'n\'Roll'),
-    Band(id: '3', name: 'Solo', genre: ''),
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    final provider = context.watch<BandProvider>();
+    final bands = provider.bands;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Bands'),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _bands.length,
+        itemCount: bands.length,
         itemBuilder: (context, index) {
-          final band = _bands[index];
+          final band = bands[index];
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(

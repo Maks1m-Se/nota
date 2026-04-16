@@ -25,8 +25,7 @@ class GigDetailScreen extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: gig.setlists.isNotEmpty
                   ? () {
-                      Navigator.push(
-                        context,
+                      Navigator.of(context, rootNavigator: true).push(
                         MaterialPageRoute(
                           builder: (context) => LiveScreen(
                             setlist: gig.setlists.first,

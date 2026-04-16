@@ -1,101 +1,69 @@
 import 'package:flutter/material.dart';
-import '../../models/gig.dart';
-import '../../models/setlist.dart';
+import 'package:provider/provider.dart';
+import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import 'gig_detail_screen.dart';
+import '../../models/gig.dart';
 import '../../models/song.dart';
 
-class GigsScreen extends StatefulWidget {
+class GigsScreen extends StatelessWidget {
   final String bandId;
 
   const GigsScreen({super.key, required this.bandId});
 
   @override
-  State<GigsScreen> createState() => _GigsScreenState();
-}
-
-class _GigsScreenState extends State<GigsScreen> {
-  final List<Song> _songs = [
-    Song(id: '1', title: 'Johnny B. Goode', artist: 'Chuck Berry', key: 'A', bpm: 130),
-    Song(id: '2', title: 'Blue Suede Shoes', artist: 'Elvis Presley', key: 'C', bpm: 120),
-    Song(id: '3', title: 'Rock Around the Clock', artist: 'Bill Haley', key: 'D', bpm: 175),
-    Song(id: '4', title: 'Jailhouse Rock', artist: 'Elvis Presley', key: 'E', bpm: 168),
-    Song(id: '5', title: 'Peggy Sue', artist: 'Buddy Holly', key: 'A', bpm: 160),
-  ];
-  final List<Gig> _gigs = [
-    Gig(
-      id: '1',
-      name: 'Stadtfest Musterstadt',
-      venue: 'Marktplatz',
-      date: DateTime(2026, 4, 19),
-      setlists: [
-        Setlist(id: '1', name: 'Set 1'),
-        Setlist(id: '2', name: 'Set 2'),
-      ],
-    ),
-    Gig(
-      id: '2',
-      name: 'Rockabilly Night',
-      venue: 'Blue Moon Club',
-      date: DateTime(2026, 5, 3),
-      setlists: [
-        Setlist(id: '3', name: 'Set 1'),
-      ],
-    ),
-    Gig(
-      id: '3',
-      name: 'Frühlingsmarkt',
-      venue: 'Rathausplatz',
-      date: DateTime(2026, 3, 15),
-      setlists: [],
-    ),
-  ];
-
-  @override
   Widget build(BuildContext context) {
+    final provider = context.watch<BandProvider>();
+    final gigs = provider.getGigs(bandId);
+    final songs = provider.getSongs(bandId);
     final now = DateTime.now();
-    final upcoming = _gigs.where((g) => g.date != null && g.date!.isAfter(now)).toList();
-    final past = _gigs.where((g) => g.date != null && g.date!.isBefore(now)).toList();
+
+    final upcoming = gigs.where((g) => g.date != null && g.date!.isAfter(now)).toList();
+    final past = gigs.where((g) => g.date != null && g.date!.isBefore(now)).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gigs'),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: AppTheme.primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (upcoming.isNotEmpty) ...[
-            const Text(
-              'UPCOMING',
-              style: TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 11,
-                letterSpacing: 0.8,
+      body: gigs.isEmpty
+          ? const Center(
+              child: Text(
+                'No gigs yet. Tap + to add one.',
+                style: TextStyle(color: AppTheme.textMuted),
               ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (upcoming.isNotEmpty) ...[
+                  const Text(
+                    'UPCOMING',
+                    style: TextStyle(
+                      color: AppTheme.textMuted,
+                      fontSize: 11,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...upcoming.map((gig) => _GigCard(gig: gig, isPast: false, songs: songs)),
+                  const SizedBox(height: 20),
+                ],
+                if (past.isNotEmpty) ...[
+                  const Text(
+                    'PAST',
+                    style: TextStyle(
+                      color: AppTheme.textMuted,
+                      fontSize: 11,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...past.map((gig) => _GigCard(gig: gig, isPast: true, songs: songs)),
+                ],
+              ],
             ),
-            const SizedBox(height: 8),
-            ...upcoming.map((gig) => _GigCard(gig: gig, isPast: false, songs: _songs)),
-            const SizedBox(height: 20),
-          ],
-          if (past.isNotEmpty) ...[
-            const Text(
-              'PAST',
-              style: TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 11,
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...past.map((gig) => _GigCard(gig: gig, isPast: true, songs: _songs)),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -135,7 +103,9 @@ class _GigCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppTheme.textMuted.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: AppTheme.textMuted.withValues(alpha: 0.3),
+              ),
             ),
             child: Text(
               '${gig.setlists.length} Sets',
@@ -171,10 +141,10 @@ class _DateBox extends StatelessWidget {
   Widget build(BuildContext context) {
     if (date == null) return const SizedBox(width: 48);
 
-  const months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
-  ];
+    const months = [
+      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+    ];
 
     return Container(
       width: 48,

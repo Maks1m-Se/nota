@@ -221,6 +221,34 @@ class _Sidebar extends StatelessWidget {
               ),
             );
           }),
+          const Spacer(),
+          const Divider(height: 1, color: AppTheme.backgroundColor),
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+            },
+            child: Container(
+              margin: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.swap_horiz, color: AppTheme.textMuted, size: 18),
+                  SizedBox(width: 10),
+                  Text(
+                    'Switch Band',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
         ],
       ),
     );

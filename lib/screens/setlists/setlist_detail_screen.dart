@@ -24,8 +24,7 @@ class SetlistDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.only(right: 12),
             child: ElevatedButton.icon(
               onPressed: () {
-                Navigator.push(
-                  context,
+                Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(
                     builder: (context) => LiveScreen(
                       setlist: setlist,

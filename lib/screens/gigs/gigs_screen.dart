@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/gig.dart';
 import '../../models/setlist.dart';
 import '../../theme/app_theme.dart';
+import 'gig_detail_screen.dart';
+import '../../models/song.dart';
 
 class GigsScreen extends StatefulWidget {
   final String bandId;
@@ -13,6 +15,13 @@ class GigsScreen extends StatefulWidget {
 }
 
 class _GigsScreenState extends State<GigsScreen> {
+  final List<Song> _songs = [
+    Song(id: '1', title: 'Johnny B. Goode', artist: 'Chuck Berry', key: 'A', bpm: 130),
+    Song(id: '2', title: 'Blue Suede Shoes', artist: 'Elvis Presley', key: 'C', bpm: 120),
+    Song(id: '3', title: 'Rock Around the Clock', artist: 'Bill Haley', key: 'D', bpm: 175),
+    Song(id: '4', title: 'Jailhouse Rock', artist: 'Elvis Presley', key: 'E', bpm: 168),
+    Song(id: '5', title: 'Peggy Sue', artist: 'Buddy Holly', key: 'A', bpm: 160),
+  ];
   final List<Gig> _gigs = [
     Gig(
       id: '1',
@@ -70,7 +79,7 @@ class _GigsScreenState extends State<GigsScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            ...upcoming.map((gig) => _GigCard(gig: gig, isPast: false)),
+            ...upcoming.map((gig) => _GigCard(gig: gig, isPast: false, songs: _songs)),
             const SizedBox(height: 20),
           ],
           if (past.isNotEmpty) ...[
@@ -83,7 +92,7 @@ class _GigsScreenState extends State<GigsScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            ...past.map((gig) => _GigCard(gig: gig, isPast: true)),
+            ...past.map((gig) => _GigCard(gig: gig, isPast: true, songs: _songs)),
           ],
         ],
       ),
@@ -94,8 +103,9 @@ class _GigsScreenState extends State<GigsScreen> {
 class _GigCard extends StatelessWidget {
   final Gig gig;
   final bool isPast;
+  final List<Song> songs;
 
-  const _GigCard({required this.gig, required this.isPast});
+  const _GigCard({required this.gig, required this.isPast, required this.songs});
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +145,17 @@ class _GigCard extends StatelessWidget {
               ),
             ),
           ),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => GigDetailScreen(
+                  gig: gig,
+                  songs: songs,
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

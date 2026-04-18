@@ -21,19 +21,23 @@ class SongDetailScreen extends StatefulWidget {
   State<SongDetailScreen> createState() => _SongDetailScreenState();
 }
 
-class _SongDetailScreenState extends State<SongDetailScreen> {
+class _SongDetailScreenState extends State<SongDetailScreen>
+    with SingleTickerProviderStateMixin {
   late TextEditingController _notesController;
+  late TabController _tabController;
   bool _editing = false;
 
   @override
   void initState() {
     super.initState();
     _notesController = TextEditingController(text: widget.song.notes);
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -53,7 +57,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final song = context.watch<BandProvider>().getSongs(widget.bandId)
-    .firstWhere((s) => s.id == widget.song.id, orElse: () => widget.song);
+        .firstWhere((s) => s.id == widget.song.id, orElse: () => widget.song);
 
     return Scaffold(
       appBar: AppBar(
@@ -71,10 +75,53 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
               ),
           ],
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: AppTheme.primaryColor,
+          labelColor: AppTheme.primaryColor,
+          unselectedLabelColor: AppTheme.textMuted,
+          tabs: const [
+            Tab(icon: Icon(Icons.notes), text: 'Notes'),
+            Tab(icon: Icon(Icons.draw), text: 'Drawing'),
+          ],
+        ),
         actions: [
+          // Metadaten
+          if (song.key.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
+              ),
+              child: Center(
+                child: Text(
+                  song.key,
+                  style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13),
+                ),
+              ),
+            ),
+          if (song.bpm != null)
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
+              ),
+              child: Center(
+                child: Text(
+                  '${song.bpm} BPM',
+                  style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13),
+                ),
+              ),
+            ),
           // Live Button
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 12, left: 6),
             child: ElevatedButton.icon(
               onPressed: () {
                 final setlist = Setlist(
@@ -87,6 +134,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                     builder: (context) => LiveScreen(
                       setlist: setlist,
                       songs: [song],
+                      singleSongMode: true,
                     ),
                   ),
                 );
@@ -101,95 +149,62 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          // Metadaten
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: AppTheme.surfaceColor,
-            child: Row(
-              children: [
-                if (song.key.isNotEmpty) _MetaBadge(label: song.key),
-                if (song.bpm != null) ...[
-                  const SizedBox(width: 8),
-                  _MetaBadge(label: '${song.bpm} BPM'),
-                ],
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          // Notizen + Zeichnung
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Notizen
-                  SizedBox(
-                    height: 300,
-                    child: _editing
-                        ? Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: TextField(
-                              controller: _notesController,
-                              maxLines: null,
-                              expands: true,
-                              autofocus: true,
-                              style: const TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 16,
-                                height: 1.7,
-                              ),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                hintText: 'Add notes, chords, structure...',
-                                hintStyle: TextStyle(color: AppTheme.textMuted),
-                              ),
-                            ),
+          // Tab 1: Notes
+          _editing
+              ? Column(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: TextField(
+                          controller: _notesController,
+                          maxLines: null,
+                          expands: true,
+                          autofocus: true,
+                          style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 16,
+                            height: 1.7,
+                          ),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Add notes, chords, structure...',
+                            hintStyle: TextStyle(color: AppTheme.textMuted),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : GestureDetector(
+                  onTap: () => setState(() => _editing = true),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    child: _notesController.text.isEmpty
+                        ? const Text(
+                            'Tap to add notes...',
+                            style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
                           )
-                        : GestureDetector(
-                            onTap: () => setState(() => _editing = true),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(16),
-                              child: _notesController.text.isEmpty
-                                  ? const Text(
-                                      'Tap to add notes...',
-                                      style: TextStyle(
-                                        color: AppTheme.textMuted,
-                                        fontSize: 16,
-                                      ),
-                                    )
-                                  : Text(
-                                      _notesController.text,
-                                      style: const TextStyle(
-                                        color: AppTheme.textPrimary,
-                                        fontSize: 16,
-                                        height: 1.7,
-                                      ),
-                                    ),
+                        : Text(
+                            _notesController.text,
+                            style: const TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 16,
+                              height: 1.7,
                             ),
                           ),
                   ),
-                  // Zeichnung Platzhalter
-                  Container(
-                    height: 200,
-                    margin: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppTheme.textMuted.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Drawing area (S Pen) — coming soon',
-                        style: TextStyle(color: AppTheme.textMuted),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+
+          // Tab 2: Drawing
+          const Center(
+            child: Text(
+              'Drawing area (S Pen) — coming soon',
+              style: TextStyle(color: AppTheme.textMuted),
             ),
           ),
         ],
@@ -201,34 +216,6 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
               child: const Icon(Icons.check, color: Colors.white),
             )
           : null,
-    );
-  }
-}
-
-class _MetaBadge extends StatelessWidget {
-  final String label;
-
-  const _MetaBadge({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: AppTheme.primaryColor.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: AppTheme.primaryColor,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
     );
   }
 }

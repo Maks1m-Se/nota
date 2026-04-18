@@ -9,12 +9,14 @@ class LiveScreen extends StatefulWidget {
   final Setlist setlist;
   final List<Song> songs;
   final int initialIndex;
+  final bool singleSongMode;
 
   const LiveScreen({
     super.key,
     required this.setlist,
     required this.songs,
     this.initialIndex = 0,
+    this.singleSongMode = false,
   });
 
   @override
@@ -111,6 +113,7 @@ class _LiveScreenState extends State<LiveScreen> {
                         total: widget.songs.length,
                         onNext: _next,
                         onPrevious: _previous,
+                        singleSongMode: widget.singleSongMode,  // ← hinzufügen
                       ),
                     ),
                   ],
@@ -121,6 +124,7 @@ class _LiveScreenState extends State<LiveScreen> {
                   total: widget.songs.length,
                   onNext: _next,
                   onPrevious: _previous,
+                  singleSongMode: widget.singleSongMode,  // ← hinzufügen
                 ),
     );
   }
@@ -132,6 +136,7 @@ class _SongView extends StatelessWidget {
   final int total;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
+  final bool singleSongMode;
 
   const _SongView({
     required this.song,
@@ -139,6 +144,7 @@ class _SongView extends StatelessWidget {
     required this.total,
     required this.onNext,
     required this.onPrevious,
+    this.singleSongMode = false,
   });
 
   @override
@@ -193,37 +199,38 @@ class _SongView extends StatelessWidget {
           ),
         ),
         // Navigation
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              OutlinedButton(
-                onPressed: currentIndex > 0 ? onPrevious : null,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondary,
-                  side: const BorderSide(color: AppTheme.textMuted),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        if (!singleSongMode)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                OutlinedButton(
+                  onPressed: currentIndex > 0 ? onPrevious : null,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.textSecondary,
+                    side: const BorderSide(color: AppTheme.textMuted),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  ),
+                  child: const Text('← Back'),
                 ),
-                child: const Text('← Back'),
-              ),
-              const Spacer(),
-              Text(
-                '${currentIndex + 1} / $total',
-                style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
-              ),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: currentIndex < total - 1 ? onNext : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                const Spacer(),
+                Text(
+                  '${currentIndex + 1} / $total',
+                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                 ),
-                child: const Text('Next →'),
-              ),
-            ],
+                const Spacer(),
+                ElevatedButton(
+                  onPressed: currentIndex < total - 1 ? onNext : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  ),
+                  child: const Text('Next →'),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }

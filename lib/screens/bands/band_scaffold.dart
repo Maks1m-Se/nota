@@ -15,7 +15,7 @@ class BandScaffold extends StatefulWidget {
 }
 
 class _BandScaffoldState extends State<BandScaffold> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
   bool _sidebarOpen = true;
 
   final _navigatorKey = GlobalKey<NavigatorState>();

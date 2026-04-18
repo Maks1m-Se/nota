@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import 'song_detail_screen.dart';
 import 'add_song_dialog.dart';
 import '../../models/song.dart';
+import 'edit_song_dialog.dart';
 
 class LibraryScreen extends StatelessWidget {
   final String bandId;
@@ -83,6 +84,76 @@ class LibraryScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => SongDetailScreen(song: song),
+                        ),
+                      );
+                    },
+                    onLongPress: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: AppTheme.surfaceColor,
+                        builder: (context) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.edit, color: AppTheme.textSecondary),
+                              title: const Text(
+                                'Edit',
+                                style: TextStyle(color: AppTheme.textPrimary),
+                              ),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => EditSongDialog(song: song, bandId: bandId),
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.delete, color: Colors.red),
+                              title: const Text(
+                                'Delete',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    backgroundColor: AppTheme.surfaceColor,
+                                    title: const Text(
+                                      'Delete Song',
+                                      style: TextStyle(color: AppTheme.textPrimary),
+                                    ),
+                                    content: Text(
+                                      'Delete "${song.title}"?',
+                                      style: const TextStyle(color: AppTheme.textSecondary),
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(),
+                                        child: const Text(
+                                          'Cancel',
+                                          style: TextStyle(color: AppTheme.textSecondary),
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          context.read<BandProvider>().deleteSong(bandId, song.id);
+                                          Navigator.of(context).pop();
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                         ),
                       );
                     },

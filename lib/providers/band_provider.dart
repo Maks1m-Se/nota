@@ -181,6 +181,12 @@ class BandProvider extends ChangeNotifier {
     }
   }
 
+  void deleteSong(String bandId, String songId) {
+    _songs[bandId]?.removeWhere((s) => s.id == songId);
+    _save();
+    notifyListeners();
+  }
+
   void addSetlist(String bandId, Setlist setlist) {
     _setlists[bandId] ??= [];
     _setlists[bandId]!.add(setlist);

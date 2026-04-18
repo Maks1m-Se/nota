@@ -217,4 +217,21 @@ class BandProvider extends ChangeNotifier {
     _save();
     notifyListeners();
   }
+
+  void deleteGig(String bandId, String gigId) {
+  _gigs[bandId]?.removeWhere((g) => g.id == gigId);
+  _save();
+  notifyListeners();
+  }
+
+  void updateGig(String bandId, Gig gig) {
+    final list = _gigs[bandId];
+    if (list == null) return;
+    final index = list.indexWhere((g) => g.id == gig.id);
+    if (index != -1) {
+      list[index] = gig;
+      _save();
+      notifyListeners();
+    }
+  }
 }

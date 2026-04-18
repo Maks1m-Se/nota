@@ -15,7 +15,6 @@ class SetlistsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<BandProvider>();
     final setlists = provider.getSetlists(bandId);
-    final songs = provider.getSongs(bandId);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(

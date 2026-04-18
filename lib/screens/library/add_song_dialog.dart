@@ -16,6 +16,7 @@ class _AddSongDialogState extends State<AddSongDialog> {
   final _keyController = TextEditingController();
   final _bpmController = TextEditingController();
   final _notesController = TextEditingController();
+  final _abbreviationController = TextEditingController();
 
   @override
   void dispose() {
@@ -24,6 +25,7 @@ class _AddSongDialogState extends State<AddSongDialog> {
     _keyController.dispose();
     _bpmController.dispose();
     _notesController.dispose();
+    _abbreviationController.dispose();
     super.dispose();
   }
 
@@ -36,6 +38,7 @@ class _AddSongDialogState extends State<AddSongDialog> {
       key: _keyController.text.trim(),
       bpm: int.tryParse(_bpmController.text.trim()),
       notes: _notesController.text.trim(),
+      abbreviation: _abbreviationController.text.trim(),
     );
     Navigator.of(context).pop(song);
   }

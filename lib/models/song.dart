@@ -5,6 +5,7 @@ class Song {
   String key;
   int? bpm;
   String notes;
+  String abbreviation;
 
   Song({
     required this.id,
@@ -13,5 +14,6 @@ class Song {
     this.key = '',
     this.bpm,
     this.notes = '',
+    this.abbreviation = '',
   });
 }

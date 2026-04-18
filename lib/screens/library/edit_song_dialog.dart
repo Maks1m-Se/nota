@@ -21,6 +21,7 @@ class _EditSongDialogState extends State<EditSongDialog> {
   late final TextEditingController _keyController;
   late final TextEditingController _bpmController;
   late final TextEditingController _notesController;
+  late final TextEditingController _abbreviationController;
 
   @override
   void initState() {
@@ -32,6 +33,7 @@ class _EditSongDialogState extends State<EditSongDialog> {
       text: widget.song.bpm?.toString() ?? '',
     );
     _notesController = TextEditingController(text: widget.song.notes);
+    _abbreviationController = TextEditingController(text: widget.song.abbreviation);
   }
 
   @override
@@ -41,6 +43,7 @@ class _EditSongDialogState extends State<EditSongDialog> {
     _keyController.dispose();
     _bpmController.dispose();
     _notesController.dispose();
+    _abbreviationController.dispose();
     super.dispose();
   }
 
@@ -53,6 +56,7 @@ class _EditSongDialogState extends State<EditSongDialog> {
       key: _keyController.text.trim(),
       bpm: int.tryParse(_bpmController.text.trim()),
       notes: _notesController.text.trim(),
+      abbreviation: _abbreviationController.text.trim(),
     );
     context.read<BandProvider>().updateSong(widget.bandId, updated);
     Navigator.of(context).pop();
@@ -96,6 +100,12 @@ class _EditSongDialogState extends State<EditSongDialog> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              _Field(
+                controller: _abbreviationController,
+                label: 'Abbreviation',
+                hint: 'e.g. JBG, V8, R66...',
               ),
               const SizedBox(height: 12),
               _Field(

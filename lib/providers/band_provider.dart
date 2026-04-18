@@ -58,6 +58,7 @@ class BandProvider extends ChangeNotifier {
             key: s['key'] ?? '',
             bpm: s['bpm'],
             notes: s['notes'] ?? '',
+            abbreviation: s['abbreviation'] ?? '',
           )).toList();
         });
         _setlists = {};
@@ -121,6 +122,7 @@ class BandProvider extends ChangeNotifier {
           'key': s.key,
           'bpm': s.bpm,
           'notes': s.notes,
+          'abbreviation': s.abbreviation,
         }).toList(),
       )),
       'setlists': _setlists.map((bandId, setlists) => MapEntry(

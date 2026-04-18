@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/band.dart';
 import '../models/song.dart';
 import '../models/setlist.dart';
@@ -6,93 +8,23 @@ import '../models/song_slot.dart';
 import '../models/gig.dart';
 
 class BandProvider extends ChangeNotifier {
-  final List<Band> _bands = [
-    Band(id: '1', name: 'PRIMEBEATS', genre: 'Rockabilly / 50s Rock\'n\'Roll'),
-    Band(id: '2', name: 'Jukebox22', genre: 'Rockabilly / 50s Rock\'n\'Roll'),
-    Band(id: '3', name: 'Solo', genre: ''),
-  ];
+  static const _storageKey = 'nota_data';
 
-  final Map<String, List<Song>> _songs = {
-    '1': [
-      Song(id: '1', title: 'Johnny B. Goode', artist: 'Chuck Berry', key: 'A', bpm: 130),
-      Song(id: '2', title: 'Blue Suede Shoes', artist: 'Elvis Presley', key: 'C', bpm: 120),
-      Song(id: '3', title: 'Rock Around the Clock', artist: 'Bill Haley', key: 'D', bpm: 175),
-      Song(id: '4', title: 'Jailhouse Rock', artist: 'Elvis Presley', key: 'E', bpm: 168),
-      Song(id: '5', title: 'Peggy Sue', artist: 'Buddy Holly', key: 'A', bpm: 160),
-    ],
-    '2': [],
-    '3': [],
-  };
+  List<Band> _bands = [];
+  Map<String, List<Song>> _songs = {};
+  Map<String, List<Setlist>> _setlists = {};
+  Map<String, List<Gig>> _gigs = {};
 
-  final Map<String, List<Setlist>> _setlists = {
-    '1': [
-      Setlist(
-        id: '1',
-        name: 'Stadtfest – Set 1',
-        slots: [
-          SongSlot(id: 's1', songId: '1', order: 0),
-          SongSlot(id: 's2', songId: '2', order: 1),
-          SongSlot(id: 's3', songId: '3', order: 2),
-        ],
-      ),
-      Setlist(
-        id: '2',
-        name: 'Stadtfest – Set 2',
-        slots: [
-          SongSlot(id: 's4', songId: '4', order: 0),
-          SongSlot(id: 's5', songId: '5', order: 1),
-        ],
-      ),
-      Setlist(id: '3', name: 'Standard Evening', slots: []),
-    ],
-    '2': [],
-    '3': [],
-  };
-
-  final Map<String, List<Gig>> _gigs = {
-    '1': [
-      Gig(
-        id: '1',
-        name: 'Stadtfest Musterstadt',
-        venue: 'Marktplatz',
-        date: DateTime(2026, 4, 19),
-        setlists: [
-          Setlist(id: '1', name: 'Set 1'),
-          Setlist(id: '2', name: 'Set 2'),
-        ],
-      ),
-      Gig(
-        id: '2',
-        name: 'Rockabilly Night',
-        venue: 'Blue Moon Club',
-        date: DateTime(2026, 5, 3),
-        setlists: [Setlist(id: '3', name: 'Set 1')],
-      ),
-      Gig(
-        id: '3',
-        name: 'Frühlingsmarkt',
-        venue: 'Rathausplatz',
-        date: DateTime(2026, 3, 15),
-        setlists: [],
-      ),
-    ],
-    '2': [],
-    '3': [],
-  };
+  BandProvider() {
+    _load();
+  }
 
   // Getters
   List<Band> get bands => List.unmodifiable(_bands);
+  List<Song> getSongs(String bandId) => List.unmodifiable(_songs[bandId] ?? []);
+  List<Setlist> getSetlists(String bandId) => List.unmodifiable(_setlists[bandId] ?? []);
+  List<Gig> getGigs(String bandId) => List.unmodifiable(_gigs[bandId] ?? []);
 
-  List<Song> getSongs(String bandId) =>
-      List.unmodifiable(_songs[bandId] ?? []);
-
-  List<Setlist> getSetlists(String bandId) =>
-      List.unmodifiable(_setlists[bandId] ?? []);
-
-  List<Gig> getGigs(String bandId) =>
-      List.unmodifiable(_gigs[bandId] ?? []);
-
-  // Songs aus einer Setlist auflösen
   List<Song> getSongsForSetlist(String bandId, Setlist setlist) {
     final allSongs = _songs[bandId] ?? [];
     return setlist.slots
@@ -103,18 +35,138 @@ class BandProvider extends ChangeNotifier {
         .toList();
   }
 
-  // Bands
+  // Load
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_storageKey);
+    debugPrint('All keys: ${prefs.getKeys()}');
+    debugPrint('Loaded raw data: $raw');
+    if (raw == null) {
+      _loadDefaults();
+    } else {
+      try {
+        final data = jsonDecode(raw);
+        _bands = (data['bands'] as List)
+            .map((b) => Band(id: b['id'], name: b['name'], genre: b['genre'] ?? ''))
+            .toList();
+        _songs = {};
+        (data['songs'] as Map).forEach((bandId, songList) {
+          _songs[bandId] = (songList as List).map((s) => Song(
+            id: s['id'],
+            title: s['title'],
+            artist: s['artist'] ?? '',
+            key: s['key'] ?? '',
+            bpm: s['bpm'],
+            notes: s['notes'] ?? '',
+          )).toList();
+        });
+        _setlists = {};
+        (data['setlists'] as Map).forEach((bandId, setlistList) {
+          _setlists[bandId] = (setlistList as List).map((sl) => Setlist(
+            id: sl['id'],
+            name: sl['name'],
+            slots: (sl['slots'] as List).map((slot) => SongSlot(
+              id: slot['id'],
+              songId: slot['songId'],
+              order: slot['order'],
+            )).toList(),
+          )).toList();
+        });
+        _gigs = {};
+        (data['gigs'] as Map).forEach((bandId, gigList) {
+          _gigs[bandId] = (gigList as List).map((g) => Gig(
+            id: g['id'],
+            name: g['name'],
+            venue: g['venue'] ?? '',
+            date: g['date'] != null ? DateTime.parse(g['date']) : null,
+            setlists: (g['setlists'] as List).map((sl) => Setlist(
+              id: sl['id'],
+              name: sl['name'],
+            )).toList(),
+          )).toList();
+        });
+      } catch (e) {
+        _loadDefaults();
+      }
+    }
+    notifyListeners();
+  }
+
+  void _loadDefaults() {
+    _bands = [
+      Band(id: '1', name: 'PRIMEBEATS', genre: 'Rockabilly / 50s Rock\'n\'Roll'),
+      Band(id: '2', name: 'Jukebox22', genre: 'Rockabilly / 50s Rock\'n\'Roll'),
+      Band(id: '3', name: 'Solo', genre: ''),
+    ];
+    _songs = {'1': [], '2': [], '3': []};
+    _setlists = {'1': [], '2': [], '3': []};
+    _gigs = {'1': [], '2': [], '3': []};
+  }
+
+  // Save
+  Future<void> _save() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = {
+      'bands': _bands.map((b) => {
+        'id': b.id,
+        'name': b.name,
+        'genre': b.genre,
+      }).toList(),
+      'songs': _songs.map((bandId, songs) => MapEntry(
+        bandId,
+        songs.map((s) => {
+          'id': s.id,
+          'title': s.title,
+          'artist': s.artist,
+          'key': s.key,
+          'bpm': s.bpm,
+          'notes': s.notes,
+        }).toList(),
+      )),
+      'setlists': _setlists.map((bandId, setlists) => MapEntry(
+        bandId,
+        setlists.map((sl) => {
+          'id': sl.id,
+          'name': sl.name,
+          'slots': sl.slots.map((slot) => {
+            'id': slot.id,
+            'songId': slot.songId,
+            'order': slot.order,
+          }).toList(),
+        }).toList(),
+      )),
+      'gigs': _gigs.map((bandId, gigs) => MapEntry(
+        bandId,
+        gigs.map((g) => {
+          'id': g.id,
+          'name': g.name,
+          'venue': g.venue,
+          'date': g.date?.toIso8601String(),
+          'setlists': g.setlists.map((sl) => {
+            'id': sl.id,
+            'name': sl.name,
+          }).toList(),
+        }).toList(),
+      )),
+    };
+    await prefs.setString(_storageKey, jsonEncode(data));
+  }
+
+  // Mutations
   void addBand(Band band) {
     _bands.add(band);
     _songs[band.id] = [];
     _setlists[band.id] = [];
     _gigs[band.id] = [];
+    _save();
     notifyListeners();
   }
 
-  // Songs
   void addSong(String bandId, Song song) {
-    _songs[bandId]?.add(song);
+    _songs[bandId] ??= [];
+    _songs[bandId]!.add(song);
+    _save();
+    debugPrint('Saved song: ${song.title}');
     notifyListeners();
   }
 
@@ -124,19 +176,22 @@ class BandProvider extends ChangeNotifier {
     final index = list.indexWhere((s) => s.id == song.id);
     if (index != -1) {
       list[index] = song;
+      _save();
       notifyListeners();
     }
   }
 
-  // Setlists
   void addSetlist(String bandId, Setlist setlist) {
-    _setlists[bandId]?.add(setlist);
+    _setlists[bandId] ??= [];
+    _setlists[bandId]!.add(setlist);
+    _save();
     notifyListeners();
   }
 
-  // Gigs
   void addGig(String bandId, Gig gig) {
-    _gigs[bandId]?.add(gig);
+    _gigs[bandId] ??= [];
+    _gigs[bandId]!.add(gig);
+    _save();
     notifyListeners();
   }
 }

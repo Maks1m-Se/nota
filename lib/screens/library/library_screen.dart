@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import 'song_detail_screen.dart';
+import 'add_song_dialog.dart';
+import '../../models/song.dart';
 
 class LibraryScreen extends StatelessWidget {
   final String bandId;
@@ -15,7 +17,15 @@ class LibraryScreen extends StatelessWidget {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () async {
+          final song = await showDialog<Song>(
+            context: context,
+            builder: (context) => const AddSongDialog(),
+          );
+          if (song != null && context.mounted) {
+            context.read<BandProvider>().addSong(bandId, song);
+          }
+        },
         backgroundColor: AppTheme.primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),

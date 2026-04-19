@@ -5,6 +5,12 @@ class Gig {
   String name;
   String venue;
   DateTime? date;
+  String time;
+  String soundcheckTime;
+  bool isOutdoor;
+  String fee;
+  String organizer;
+  String notes;
   List<Setlist> setlists;
 
   Gig({
@@ -12,6 +18,12 @@ class Gig {
     required this.name,
     this.venue = '',
     this.date,
+    this.time = '',
+    this.soundcheckTime = '',
+    this.isOutdoor = false,
+    this.fee = '',
+    this.organizer = '',
+    this.notes = '',
     List<Setlist>? setlists,
   }) : setlists = setlists ?? [];
 }

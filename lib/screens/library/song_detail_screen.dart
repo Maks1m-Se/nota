@@ -10,6 +10,7 @@ import '../live/live_screen.dart';
 import '../../models/setlist.dart';
 import '../../models/song_slot.dart';
 
+
 class SongDetailScreen extends StatefulWidget {
   final Song song;
   final String bandId;
@@ -31,15 +32,17 @@ class _SongDetailScreenState extends State<SongDetailScreen>
   bool _editing = false;
 
   // Drawing state
-  Color _selectedColor = Colors.white;
+  Color _selectedColor = Colors.black;
   double _selectedWidth = 2.0;
   bool _isEraser = false;
+  CanvasBackground _background = CanvasBackground.blank;
 
   @override
   void initState() {
     super.initState();
     _notesController = TextEditingController(text: widget.song.notes);
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() => setState(() {}));
   }
 
   @override
@@ -269,24 +272,23 @@ class _SongDetailScreenState extends State<SongDetailScreen>
                 selectedColor: _selectedColor,
                 selectedWidth: _selectedWidth,
                 isEraser: _isEraser,
+                background: _background,
                 onUndo: () => _undo(song),
                 onClear: () => _clear(song),
                 onColorChanged: (c) => setState(() => _selectedColor = c),
                 onWidthChanged: (w) => setState(() => _selectedWidth = w),
                 onEraserToggled: (e) => setState(() => _isEraser = e),
+                onBackgroundChanged: (b) => setState(() => _background = b),
               ),
               Expanded(
-                child: InteractiveViewer(
-                  minScale: 0.5,
-                  maxScale: 4.0,
-                  child: DrawingCanvas(
-                    strokes: song.strokes,
-                    editable: true,
-                    selectedColor: _selectedColor,
-                    selectedWidth: _selectedWidth,
-                    isEraser: _isEraser,
-                    onStrokesChanged: _onStrokesChanged,
-                  ),
+                child: DrawingCanvas(
+                  strokes: song.strokes,
+                  editable: true,
+                  selectedColor: _selectedColor,
+                  selectedWidth: _selectedWidth,
+                  isEraser: _isEraser,
+                  onStrokesChanged: _onStrokesChanged,
+                  background: _background,
                 ),
               ),
             ],

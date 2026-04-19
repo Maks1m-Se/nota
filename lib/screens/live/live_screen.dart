@@ -87,13 +87,13 @@ class _LiveScreenState extends State<LiveScreen> {
         ],
       ),
       body: _mode == LiveMode.setlistOnly
-          ? _SetlistView(
-              setlist: widget.setlist,
-              songs: widget.songs,
-              currentIndex: _currentIndex,
-              onSongTap: (i) => setState(() => _currentIndex = i),
-            )
-          : _mode == LiveMode.withSidebar
+              ? _SetlistView(
+                  setlist: widget.setlist,
+                  songs: widget.songs,
+                  currentIndex: _currentIndex,
+                  onSongTap: (i) => setState(() => _currentIndex = i),
+                )
+              : _mode == LiveMode.withSidebar
               ? Row(
                   children: [
                     SizedBox(
@@ -103,28 +103,31 @@ class _LiveScreenState extends State<LiveScreen> {
                         songs: widget.songs,
                         currentIndex: _currentIndex,
                         onSongTap: (i) => setState(() => _currentIndex = i),
+                        useAbbreviation: true,
                       ),
                     ),
                     const VerticalDivider(width: 1, color: AppTheme.surfaceColor),
                     Expanded(
                       child: _SongView(
                         song: _currentSong,
+                        songs: widget.songs,
                         currentIndex: _currentIndex,
                         total: widget.songs.length,
                         onNext: _next,
                         onPrevious: _previous,
-                        singleSongMode: widget.singleSongMode,  // ← hinzufügen
+                        singleSongMode: widget.singleSongMode,
                       ),
                     ),
                   ],
                 )
               : _SongView(
                   song: _currentSong,
+                  songs: widget.songs,
                   currentIndex: _currentIndex,
                   total: widget.songs.length,
                   onNext: _next,
                   onPrevious: _previous,
-                  singleSongMode: widget.singleSongMode,  // ← hinzufügen
+                  singleSongMode: widget.singleSongMode,
                 ),
     );
   }
@@ -132,6 +135,7 @@ class _LiveScreenState extends State<LiveScreen> {
 
 class _SongView extends StatelessWidget {
   final Song song;
+  final List<Song> songs;
   final int currentIndex;
   final int total;
   final VoidCallback onNext;
@@ -140,6 +144,7 @@ class _SongView extends StatelessWidget {
 
   const _SongView({
     required this.song,
+    required this.songs,
     required this.currentIndex,
     required this.total,
     required this.onNext,
@@ -202,31 +207,55 @@ class _SongView extends StatelessWidget {
         if (!singleSongMode)
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
               children: [
-                OutlinedButton(
-                  onPressed: currentIndex > 0 ? onPrevious : null,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppTheme.textSecondary,
-                    side: const BorderSide(color: AppTheme.textMuted),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                // Nächster Song Hinweis
+                if (currentIndex < total - 1)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(
+                          songs[currentIndex + 1].abbreviation.isNotEmpty
+                              ? songs[currentIndex + 1].abbreviation
+                              : songs[currentIndex + 1].title,
+                          style: const TextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Text('← Back'),
-                ),
-                const Spacer(),
-                Text(
-                  '${currentIndex + 1} / $total',
-                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: currentIndex < total - 1 ? onNext : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  ),
-                  child: const Text('Next →'),
+                // Navigation Buttons
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: currentIndex > 0 ? onPrevious : null,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.textSecondary,
+                        side: const BorderSide(color: AppTheme.textMuted),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      ),
+                      child: const Text('← Back'),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${currentIndex + 1} / $total',
+                      style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                    ),
+                    const Spacer(),
+                    ElevatedButton(
+                      onPressed: currentIndex < total - 1 ? onNext : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                      ),
+                      child: const Text('Next →'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -241,12 +270,14 @@ class _SetlistView extends StatelessWidget {
   final List<Song> songs;
   final int currentIndex;
   final ValueChanged<int> onSongTap;
+  final bool useAbbreviation;
 
   const _SetlistView({
     required this.setlist,
     required this.songs,
     required this.currentIndex,
     required this.onSongTap,
+    this.useAbbreviation = false,
   });
 
   @override
@@ -286,7 +317,9 @@ class _SetlistView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        song.title,
+                        useAbbreviation && song.abbreviation.isNotEmpty
+                            ? song.abbreviation
+                            : song.title,
                         style: TextStyle(
                           color: isCurrent ? AppTheme.textPrimary : AppTheme.textSecondary,
                           fontSize: isCurrent ? 15 : 13,

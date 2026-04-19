@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/song.dart';
+import '../../models/drawing_stroke.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/drawing_canvas.dart';
+import '../../widgets/drawing_toolbar.dart';
 import '../live/live_screen.dart';
 import '../../models/setlist.dart';
 import '../../models/song_slot.dart';
@@ -27,6 +30,11 @@ class _SongDetailScreenState extends State<SongDetailScreen>
   late TabController _tabController;
   bool _editing = false;
 
+  // Drawing state
+  Color _selectedColor = Colors.white;
+  double _selectedWidth = 2.0;
+  bool _isEraser = false;
+
   @override
   void initState() {
     super.initState();
@@ -49,9 +57,62 @@ class _SongDetailScreenState extends State<SongDetailScreen>
       key: widget.song.key,
       bpm: widget.song.bpm,
       notes: _notesController.text.trim(),
+      abbreviation: widget.song.abbreviation,
+      strokes: widget.song.strokes,
+      quickStrokes: widget.song.quickStrokes,
     );
     context.read<BandProvider>().updateSong(widget.bandId, updated);
     setState(() => _editing = false);
+  }
+
+  void _onStrokesChanged(List<DrawingStroke> strokes) {
+    context.read<BandProvider>().updateSongStrokes(
+      widget.bandId,
+      widget.song.id,
+      strokes,
+    );
+  }
+
+  void _undo(Song song) {
+    if (song.strokes.isEmpty) return;
+    final newStrokes = List<DrawingStroke>.from(song.strokes)..removeLast();
+    context.read<BandProvider>().updateSongStrokes(
+      widget.bandId,
+      widget.song.id,
+      newStrokes,
+    );
+  }
+
+  void _clear(Song song) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceColor,
+        title: const Text('Clear Drawing', style: TextStyle(color: AppTheme.textPrimary)),
+        content: const Text('Delete all strokes?', style: TextStyle(color: AppTheme.textSecondary)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              context.read<BandProvider>().updateSongStrokes(
+                widget.bandId,
+                widget.song.id,
+                [],
+              );
+              Navigator.of(context).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -86,7 +147,6 @@ class _SongDetailScreenState extends State<SongDetailScreen>
           ],
         ),
         actions: [
-          // Metadaten
           if (song.key.isNotEmpty)
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
@@ -119,7 +179,6 @@ class _SongDetailScreenState extends State<SongDetailScreen>
                 ),
               ),
             ),
-          // Live Button
           Padding(
             padding: const EdgeInsets.only(right: 12, left: 6),
             child: ElevatedButton.icon(
@@ -151,6 +210,9 @@ class _SongDetailScreenState extends State<SongDetailScreen>
       ),
       body: TabBarView(
         controller: _tabController,
+        physics: _tabController.index == 1
+            ? const NeverScrollableScrollPhysics()
+            : const AlwaysScrollableScrollPhysics(),
         children: [
           // Tab 1: Notes
           _editing
@@ -201,11 +263,33 @@ class _SongDetailScreenState extends State<SongDetailScreen>
                 ),
 
           // Tab 2: Drawing
-          const Center(
-            child: Text(
-              'Drawing area (S Pen) — coming soon',
-              style: TextStyle(color: AppTheme.textMuted),
-            ),
+          Column(
+            children: [
+              DrawingToolbar(
+                selectedColor: _selectedColor,
+                selectedWidth: _selectedWidth,
+                isEraser: _isEraser,
+                onUndo: () => _undo(song),
+                onClear: () => _clear(song),
+                onColorChanged: (c) => setState(() => _selectedColor = c),
+                onWidthChanged: (w) => setState(() => _selectedWidth = w),
+                onEraserToggled: (e) => setState(() => _isEraser = e),
+              ),
+              Expanded(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: DrawingCanvas(
+                    strokes: song.strokes,
+                    editable: true,
+                    selectedColor: _selectedColor,
+                    selectedWidth: _selectedWidth,
+                    isEraser: _isEraser,
+                    onStrokesChanged: _onStrokesChanged,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

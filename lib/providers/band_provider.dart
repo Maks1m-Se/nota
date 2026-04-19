@@ -6,6 +6,7 @@ import '../models/song.dart';
 import '../models/setlist.dart';
 import '../models/song_slot.dart';
 import '../models/gig.dart';
+import '../models/drawing_stroke.dart';
 
 class BandProvider extends ChangeNotifier {
   static const _storageKey = 'nota_data';
@@ -59,6 +60,12 @@ class BandProvider extends ChangeNotifier {
             bpm: s['bpm'],
             notes: s['notes'] ?? '',
             abbreviation: s['abbreviation'] ?? '',
+            strokes: (s['strokes'] as List? ?? [])
+                .map((stroke) => DrawingStroke.fromJson(stroke))
+                .toList(),
+            quickStrokes: (s['quickStrokes'] as List? ?? [])
+                .map((stroke) => DrawingStroke.fromJson(stroke))
+                .toList(),
           )).toList();
         });
         _setlists = {};
@@ -123,6 +130,8 @@ class BandProvider extends ChangeNotifier {
           'bpm': s.bpm,
           'notes': s.notes,
           'abbreviation': s.abbreviation,
+          'strokes': s.strokes.map((stroke) => stroke.toJson()).toList(),
+          'quickStrokes': s.quickStrokes.map((stroke) => stroke.toJson()).toList(),
         }).toList(),
       )),
       'setlists': _setlists.map((bandId, setlists) => MapEntry(
@@ -178,6 +187,21 @@ class BandProvider extends ChangeNotifier {
     final index = list.indexWhere((s) => s.id == song.id);
     if (index != -1) {
       list[index] = song;
+      _save();
+      notifyListeners();
+    }
+  }
+  
+  void updateSongStrokes(String bandId, String songId, List<DrawingStroke> strokes, {bool isQuick = false}) {
+    final list = _songs[bandId];
+    if (list == null) return;
+    final index = list.indexWhere((s) => s.id == songId);
+    if (index != -1) {
+      if (isQuick) {
+        list[index].quickStrokes = strokes;
+      } else {
+        list[index].strokes = strokes;
+      }
       _save();
       notifyListeners();
     }

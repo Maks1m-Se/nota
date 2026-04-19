@@ -1,3 +1,5 @@
+import 'drawing_stroke.dart';
+
 class Song {
   final String id;
   String title;
@@ -6,6 +8,8 @@ class Song {
   int? bpm;
   String notes;
   String abbreviation;
+  List<DrawingStroke> strokes;
+  List<DrawingStroke> quickStrokes;
 
   Song({
     required this.id,
@@ -15,5 +19,8 @@ class Song {
     this.bpm,
     this.notes = '',
     this.abbreviation = '',
-  });
+    List<DrawingStroke>? strokes,
+    List<DrawingStroke>? quickStrokes,
+  }) : strokes = strokes ?? [],
+       quickStrokes = quickStrokes ?? [];
 }

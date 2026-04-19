@@ -141,9 +141,31 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
                   const SizedBox(height: 12),
                   if (_gig.date != null)
                     _DetailRow(icon: Icons.calendar_today, label: '${_gig.date!.day}.${_gig.date!.month}.${_gig.date!.year}'),
+                  if (_gig.time.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _DetailRow(icon: Icons.access_time, label: _gig.time),
+                  ],
+                  if (_gig.soundcheckTime.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _DetailRow(icon: Icons.settings_input_antenna, label: 'Soundcheck: ${_gig.soundcheckTime}'),
+                  ],
                   if (_gig.venue.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     _DetailRow(icon: Icons.location_on, label: _gig.venue),
+                  ],
+                  const SizedBox(height: 8),
+                  _DetailRow(icon: _gig.isOutdoor ? Icons.wb_sunny : Icons.home, label: _gig.isOutdoor ? 'Outdoor' : 'Indoor'),
+                  if (_gig.fee.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _DetailRow(icon: Icons.euro, label: _gig.fee),
+                  ],
+                  if (_gig.organizer.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _DetailRow(icon: Icons.person, label: _gig.organizer),
+                  ],
+                  if (_gig.notes.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _DetailRow(icon: Icons.notes, label: _gig.notes),
                   ],
                 ],
               ),

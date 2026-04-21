@@ -132,7 +132,7 @@ class _AddGigDialogState extends State<AddGigDialog> {
                   Switch(
                     value: _isOutdoor,
                     onChanged: (v) => setState(() => _isOutdoor = v),
-                    activeColor: AppTheme.primaryColor,
+                    activeThumbColor: AppTheme.primaryColor,
                   ),
                 ],
               ),

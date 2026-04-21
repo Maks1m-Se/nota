@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import 'band_scaffold.dart';
+import '../settings/settings_screen.dart';
 
 class BandListScreen extends StatelessWidget {
   const BandListScreen({super.key});
@@ -15,6 +16,19 @@ class BandListScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Bands'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: AppTheme.textMuted),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),

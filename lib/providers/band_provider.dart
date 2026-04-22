@@ -60,6 +60,10 @@ class BandProvider extends ChangeNotifier {
             bpm: s['bpm'],
             notes: s['notes'] ?? '',
             abbreviation: s['abbreviation'] ?? '',
+            intro: s['intro'] ?? '',
+            outro: s['outro'] ?? '',
+            hasSolo: s['hasSolo'] ?? false,
+            hasBacking: s['hasBacking'] ?? false,
             strokes: (s['strokes'] as List? ?? [])
                 .map((stroke) => DrawingStroke.fromJson(stroke))
                 .toList(),
@@ -136,6 +140,10 @@ class BandProvider extends ChangeNotifier {
           'bpm': s.bpm,
           'notes': s.notes,
           'abbreviation': s.abbreviation,
+          'intro': s.intro,
+          'outro': s.outro,
+          'hasSolo': s.hasSolo,
+          'hasBacking': s.hasBacking,
           'strokes': s.strokes.map((stroke) => stroke.toJson()).toList(),
           'quickStrokes': s.quickStrokes.map((stroke) => stroke.toJson()).toList(),
         }).toList(),

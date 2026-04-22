@@ -17,6 +17,10 @@ class _AddSongDialogState extends State<AddSongDialog> {
   final _bpmController = TextEditingController();
   final _notesController = TextEditingController();
   final _abbreviationController = TextEditingController();
+  final _introController = TextEditingController();
+  final _outroController = TextEditingController();
+  bool _hasSolo = false;
+  bool _hasBacking = false;
 
   @override
   void dispose() {
@@ -26,6 +30,8 @@ class _AddSongDialogState extends State<AddSongDialog> {
     _bpmController.dispose();
     _notesController.dispose();
     _abbreviationController.dispose();
+    _introController.dispose();
+    _outroController.dispose();
     super.dispose();
   }
 
@@ -39,6 +45,10 @@ class _AddSongDialogState extends State<AddSongDialog> {
       bpm: int.tryParse(_bpmController.text.trim()),
       notes: _notesController.text.trim(),
       abbreviation: _abbreviationController.text.trim(),
+      intro: _introController.text.trim(),
+      outro: _outroController.text.trim(),
+      hasSolo: _hasSolo,
+      hasBacking: _hasBacking,
     );
     Navigator.of(context).pop(song);
   }
@@ -47,36 +57,21 @@ class _AddSongDialogState extends State<AddSongDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppTheme.surfaceColor,
-      title: const Text(
-        'Add Song',
-        style: TextStyle(color: AppTheme.textPrimary),
-      ),
+      title: const Text('Add Song', style: TextStyle(color: AppTheme.textPrimary)),
       content: SizedBox(
         width: 500,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _Field(
-                controller: _titleController,
-                label: 'Title *',
-                hint: 'Song title',
-              ),
+              _Field(controller: _titleController, label: 'Title *', hint: 'Song title'),
               const SizedBox(height: 12),
-              _Field(
-                controller: _artistController,
-                label: 'Artist',
-                hint: 'Artist name',
-              ),
+              _Field(controller: _artistController, label: 'Artist', hint: 'Artist name'),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: _Field(
-                      controller: _keyController,
-                      label: 'Key',
-                      hint: 'A, Bb, C#...',
-                    ),
+                    child: _Field(controller: _keyController, label: 'Key', hint: 'A, Bb, C#...'),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -91,11 +86,47 @@ class _AddSongDialogState extends State<AddSongDialog> {
                 ],
               ),
               const SizedBox(height: 12),
+              _Field(controller: _abbreviationController, label: 'Abbreviation', hint: 'e.g. JBG, V8...'),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _Field(controller: _introController, label: 'Intro', hint: 'e.g. Gitarren-Riff 4×'),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _Field(controller: _outroController, label: 'Outro', hint: 'e.g. Hard Cut'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  // Solo Switch
+                  Text('Solo', style: TextStyle(color: _hasSolo ? Colors.red : AppTheme.textSecondary, fontSize: 13)),
+                  Switch(
+                    value: _hasSolo,
+                    onChanged: (v) => setState(() => _hasSolo = v),
+                    activeThumbColor: Colors.red,
+                    activeTrackColor: Colors.red.withValues(alpha: 0.3),
+                  ),
+                  const SizedBox(width: 16),
+                  // Backing Switch
+                  Text('Backing', style: TextStyle(color: _hasBacking ? Colors.blue : AppTheme.textSecondary, fontSize: 13)),
+                  Switch(
+                    value: _hasBacking,
+                    onChanged: (v) => setState(() => _hasBacking = v),
+                    activeThumbColor: Colors.blue,
+                    activeTrackColor: Colors.blue.withValues(alpha: 0.3),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               _Field(
                 controller: _notesController,
                 label: 'Notes',
-                hint: 'Chords, structure, tips...',
-                maxLines: 4,
+                hint: 'Additional notes...',
+                maxLines: 3,
               ),
             ],
           ),
@@ -104,10 +135,7 @@ class _AddSongDialogState extends State<AddSongDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: AppTheme.textSecondary),
-          ),
+          child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
         ),
         ElevatedButton(
           onPressed: _submit,
@@ -144,13 +172,7 @@ class _Field extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppTheme.textSecondary,
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
         const SizedBox(height: 4),
         TextField(
           controller: controller,
@@ -167,10 +189,7 @@ class _Field extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
         ),
       ],

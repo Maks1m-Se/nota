@@ -8,6 +8,10 @@ class Song {
   int? bpm;
   String notes;
   String abbreviation;
+  String intro;
+  String outro;
+  bool hasSolo;
+  bool hasBacking;
   List<DrawingStroke> strokes;
   List<DrawingStroke> quickStrokes;
 
@@ -19,6 +23,10 @@ class Song {
     this.bpm,
     this.notes = '',
     this.abbreviation = '',
+    this.intro = '',
+    this.outro = '',
+    this.hasSolo = false,
+    this.hasBacking = false,
     List<DrawingStroke>? strokes,
     List<DrawingStroke>? quickStrokes,
   }) : strokes = strokes ?? [],

@@ -10,7 +10,6 @@ import '../live/live_screen.dart';
 import '../../models/setlist.dart';
 import '../../models/song_slot.dart';
 
-
 class SongDetailScreen extends StatefulWidget {
   final Song song;
   final String bandId;
@@ -25,48 +24,15 @@ class SongDetailScreen extends StatefulWidget {
   State<SongDetailScreen> createState() => _SongDetailScreenState();
 }
 
-class _SongDetailScreenState extends State<SongDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late TextEditingController _notesController;
-  late TabController _tabController;
-  bool _editing = false;
+class _SongDetailScreenState extends State<SongDetailScreen> {
+  bool _metaExpanded = false;
 
   // Drawing state
   Color _selectedColor = Colors.black;
   double _selectedWidth = 2.0;
   bool _isEraser = false;
-  CanvasBackground _background = CanvasBackground.blank;
-
-  @override
-  void initState() {
-    super.initState();
-    _notesController = TextEditingController(text: widget.song.notes);
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() => setState(() {}));
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  void _saveNotes() {
-    final updated = Song(
-      id: widget.song.id,
-      title: widget.song.title,
-      artist: widget.song.artist,
-      key: widget.song.key,
-      bpm: widget.song.bpm,
-      notes: _notesController.text.trim(),
-      abbreviation: widget.song.abbreviation,
-      strokes: widget.song.strokes,
-      quickStrokes: widget.song.quickStrokes,
-    );
-    context.read<BandProvider>().updateSong(widget.bandId, updated);
-    setState(() => _editing = false);
-  }
+  CanvasBackground _background = CanvasBackground.dark;
+  DrawingTool _activeTool = DrawingTool.pen;
 
   void _onStrokesChanged(List<DrawingStroke> strokes) {
     context.read<BandProvider>().updateSongStrokes(
@@ -132,58 +98,37 @@ class _SongDetailScreenState extends State<SongDetailScreen>
             if (song.artist.isNotEmpty)
               Text(
                 song.artist,
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               ),
-          ],
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: AppTheme.primaryColor,
-          labelColor: AppTheme.primaryColor,
-          unselectedLabelColor: AppTheme.textMuted,
-          tabs: const [
-            Tab(icon: Icon(Icons.notes), text: 'Notes'),
-            Tab(icon: Icon(Icons.draw), text: 'Drawing'),
           ],
         ),
         actions: [
           if (song.key.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
-              ),
-              child: Center(
-                child: Text(
-                  song.key,
-                  style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13),
-                ),
-              ),
+            _MetaBadge(label: song.key),
+          if (song.bpm != null) ...[
+            const SizedBox(width: 6),
+            _MetaBadge(label: '${song.bpm} BPM'),
+          ],
+          if (song.hasSolo) ...[
+            const SizedBox(width: 6),
+            _MetaBadge(label: 'S', color: Colors.red),
+          ],
+          if (song.hasBacking) ...[
+            const SizedBox(width: 6),
+            _MetaBadge(label: 'B', color: Colors.blue),
+          ],
+          const SizedBox(width: 8),
+          // Toggle Metadaten
+          IconButton(
+            icon: Icon(
+              _metaExpanded ? Icons.expand_less : Icons.expand_more,
+              color: AppTheme.textMuted,
             ),
-          if (song.bpm != null)
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
-              ),
-              child: Center(
-                child: Text(
-                  '${song.bpm} BPM',
-                  style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13),
-                ),
-              ),
-            ),
+            onPressed: () => setState(() => _metaExpanded = !_metaExpanded),
+            tooltip: 'Metadata',
+          ),
           Padding(
-            padding: const EdgeInsets.only(right: 12, left: 6),
+            padding: const EdgeInsets.only(right: 12, left: 4),
             child: ElevatedButton.icon(
               onPressed: () {
                 final setlist = Setlist(
@@ -211,76 +156,29 @@ class _SongDetailScreenState extends State<SongDetailScreen>
           ),
         ],
       ),
-      body: TabBarView(
-        controller: _tabController,
-        physics: _tabController.index == 1
-            ? const NeverScrollableScrollPhysics()
-            : const AlwaysScrollableScrollPhysics(),
+      body: Column(
         children: [
-          // Tab 1: Notes
-          _editing
-              ? Column(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: TextField(
-                          controller: _notesController,
-                          maxLines: null,
-                          expands: true,
-                          autofocus: true,
-                          style: const TextStyle(
-                            color: AppTheme.textPrimary,
-                            fontSize: 16,
-                            height: 1.7,
-                          ),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            hintText: 'Add notes, chords, structure...',
-                            hintStyle: TextStyle(color: AppTheme.textMuted),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : GestureDetector(
-                  onTap: () => setState(() => _editing = true),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    child: _notesController.text.isEmpty
-                        ? const Text(
-                            'Tap to add notes...',
-                            style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
-                          )
-                        : Text(
-                            _notesController.text,
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontSize: 16,
-                              height: 1.7,
-                            ),
-                          ),
-                  ),
-                ),
-
-          // Tab 2: Drawing
-          Column(
-            children: [
-              DrawingToolbar(
-                selectedColor: _selectedColor,
-                selectedWidth: _selectedWidth,
-                isEraser: _isEraser,
-                background: _background,
-                onUndo: () => _undo(song),
-                onClear: () => _clear(song),
-                onColorChanged: (c) => setState(() => _selectedColor = c),
-                onWidthChanged: (w) => setState(() => _selectedWidth = w),
-                onEraserToggled: (e) => setState(() => _isEraser = e),
-                onBackgroundChanged: (b) => setState(() => _background = b),
-              ),
-              Expanded(
+          // Aufklappbare Metadaten
+          if (_metaExpanded)
+            _MetadataPanel(
+              song: song,
+              bandId: widget.bandId,
+            ),
+          // Toolbar
+          DrawingToolbar(
+            selectedColor: _selectedColor,
+            selectedWidth: _selectedWidth,
+            isEraser: _isEraser,
+            background: _background,
+            onUndo: () => _undo(song),
+            onClear: () => _clear(song),
+            onColorChanged: (c) => setState(() => _selectedColor = c),
+            onWidthChanged: (w) => setState(() => _selectedWidth = w),
+            onEraserToggled: (e) => setState(() => _isEraser = e),
+            onBackgroundChanged: (b) => setState(() => _background = b),
+          ),
+          // Canvas
+          Expanded(
                 child: DrawingCanvas(
                   strokes: song.strokes,
                   editable: true,
@@ -289,19 +187,269 @@ class _SongDetailScreenState extends State<SongDetailScreen>
                   isEraser: _isEraser,
                   onStrokesChanged: _onStrokesChanged,
                   background: _background,
+                  onUndo: () => _undo(song),
+                  onEraserToggled: (e) => setState(() => _isEraser = e),
+                  onDoublePenButton: () {
+                    setState(() {
+                      _activeTool = _activeTool == DrawingTool.pen
+                          ? DrawingTool.highlighter
+                          : DrawingTool.pen;
+                    });
+                  },
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetadataPanel extends StatefulWidget {
+  final Song song;
+  final String bandId;
+
+  const _MetadataPanel({required this.song, required this.bandId});
+
+  @override
+  State<_MetadataPanel> createState() => _MetadataPanelState();
+}
+
+class _MetadataPanelState extends State<_MetadataPanel> {
+  late TextEditingController _introController;
+  late TextEditingController _outroController;
+  late TextEditingController _notesController;
+
+  @override
+  void initState() {
+    super.initState();
+    _introController = TextEditingController(text: widget.song.intro);
+    _outroController = TextEditingController(text: widget.song.outro);
+    _notesController = TextEditingController(text: widget.song.notes);
+  }
+
+  @override
+  void dispose() {
+    _introController.dispose();
+    _outroController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final updated = Song(
+      id: widget.song.id,
+      title: widget.song.title,
+      artist: widget.song.artist,
+      key: widget.song.key,
+      bpm: widget.song.bpm,
+      notes: _notesController.text.trim(),
+      abbreviation: widget.song.abbreviation,
+      intro: _introController.text.trim(),
+      outro: _outroController.text.trim(),
+      hasSolo: widget.song.hasSolo,
+      hasBacking: widget.song.hasBacking,
+      strokes: widget.song.strokes,
+      quickStrokes: widget.song.quickStrokes,
+    );
+    context.read<BandProvider>().updateSong(widget.bandId, updated);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppTheme.surfaceColor,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _MetaField(
+                  controller: _introController,
+                  label: 'Intro',
+                  hint: 'e.g. Gitarren-Riff 4×',
+                  onChanged: (_) => _save(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _MetaField(
+                  controller: _outroController,
+                  label: 'Outro',
+                  hint: 'e.g. Hard Cut',
+                  onChanged: (_) => _save(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              // Solo Switch
+              _SwitchBadge(
+                label: 'Solo',
+                value: widget.song.hasSolo,
+                color: Colors.red,
+                onChanged: (v) {
+                  final updated = Song(
+                    id: widget.song.id,
+                    title: widget.song.title,
+                    artist: widget.song.artist,
+                    key: widget.song.key,
+                    bpm: widget.song.bpm,
+                    notes: widget.song.notes,
+                    abbreviation: widget.song.abbreviation,
+                    intro: widget.song.intro,
+                    outro: widget.song.outro,
+                    hasSolo: v,
+                    hasBacking: widget.song.hasBacking,
+                    strokes: widget.song.strokes,
+                    quickStrokes: widget.song.quickStrokes,
+                  );
+                  context.read<BandProvider>().updateSong(widget.bandId, updated);
+                },
+              ),
+              const SizedBox(width: 16),
+              // Backing Switch
+              _SwitchBadge(
+                label: 'Backing',
+                value: widget.song.hasBacking,
+                color: Colors.blue,
+                onChanged: (v) {
+                  final updated = Song(
+                    id: widget.song.id,
+                    title: widget.song.title,
+                    artist: widget.song.artist,
+                    key: widget.song.key,
+                    bpm: widget.song.bpm,
+                    notes: widget.song.notes,
+                    abbreviation: widget.song.abbreviation,
+                    intro: widget.song.intro,
+                    outro: widget.song.outro,
+                    hasSolo: widget.song.hasSolo,
+                    hasBacking: v,
+                    strokes: widget.song.strokes,
+                    quickStrokes: widget.song.quickStrokes,
+                  );
+                  context.read<BandProvider>().updateSong(widget.bandId, updated);
+                },
+              ),
+              const Spacer(),
+              Expanded(
+                flex: 3,
+                child: _MetaField(
+                  controller: _notesController,
+                  label: 'Notes',
+                  hint: 'Additional notes...',
+                  onChanged: (_) => _save(),
                 ),
               ),
             ],
           ),
         ],
       ),
-      floatingActionButton: _editing
-          ? FloatingActionButton(
-              onPressed: _saveNotes,
-              backgroundColor: AppTheme.primaryColor,
-              child: const Icon(Icons.check, color: Colors.white),
-            )
-          : null,
+    );
+  }
+}
+
+class _MetaField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final Function(String) onChanged;
+
+  const _MetaField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+        const SizedBox(height: 2),
+        TextField(
+          controller: controller,
+          onChanged: onChanged,
+          style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SwitchBadge extends StatelessWidget {
+  final String label;
+  final bool value;
+  final Color color;
+  final Function(bool) onChanged;
+
+  const _SwitchBadge({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: value ? color : AppTheme.textSecondary,
+            fontWeight: value ? FontWeight.w600 : FontWeight.normal,
+            fontSize: 13,
+          ),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: color,
+          activeTrackColor: color.withValues(alpha: 0.3),
+        ),
+      ],
+    );
+  }
+}
+
+class _MetaBadge extends StatelessWidget {
+  final String label;
+  final Color? color;
+
+  const _MetaBadge({required this.label, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final badgeColor = color ?? AppTheme.primaryColor;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: badgeColor, fontSize: 12, fontWeight: FontWeight.w500),
+      ),
     );
   }
 }

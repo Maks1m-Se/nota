@@ -6,6 +6,7 @@ import '../../models/song.dart';
 import '../../theme/app_theme.dart';
 import 'gig_detail_screen.dart';
 import 'add_gig_dialog.dart';
+import 'edit_gig_dialog.dart';
 
 class GigsScreen extends StatelessWidget {
   final String bandId;
@@ -106,6 +107,20 @@ class _GigCard extends StatelessWidget {
               builder: (context) => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  ListTile(
+                    leading: const Icon(Icons.edit, color: AppTheme.textPrimary),
+                    title: const Text('Edit', style: TextStyle(color: AppTheme.textPrimary)),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      final updated = await showDialog<Gig>(
+                        context: context,
+                        builder: (context) => EditGigDialog(gig: gig),
+                      );
+                      if (updated != null && context.mounted) {
+                        context.read<BandProvider>().updateGig(bandId, updated);
+                      }
+                    },
+                  ),
                   ListTile(
                     leading: const Icon(Icons.delete, color: Colors.red),
                     title: const Text('Delete', style: TextStyle(color: Colors.red)),

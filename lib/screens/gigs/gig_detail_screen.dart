@@ -77,6 +77,12 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
                         name: _gig.name,
                         venue: _gig.venue,
                         date: _gig.date,
+                        time: _gig.time,
+                        soundcheckTime: _gig.soundcheckTime,
+                        setting: _gig.setting,
+                        fee: _gig.fee,
+                        organizer: _gig.organizer,
+                        notes: _gig.notes,
                         setlists: [..._gig.setlists, setlist],
                       );
                     });
@@ -153,8 +159,10 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
                     const SizedBox(height: 8),
                     _DetailRow(icon: Icons.location_on, label: _gig.venue),
                   ],
-                  const SizedBox(height: 8),
-                  _DetailRow(icon: _gig.isOutdoor ? Icons.wb_sunny : Icons.home, label: _gig.isOutdoor ? 'Outdoor' : 'Indoor'),
+                  if (_gig.setting.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _DetailRow(icon: Icons.place, label: _gig.setting),
+                  ],
                   if (_gig.fee.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     _DetailRow(icon: Icons.euro, label: _gig.fee),
@@ -220,6 +228,12 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
                             name: _gig.name,
                             venue: _gig.venue,
                             date: _gig.date,
+                            time: _gig.time,
+                            soundcheckTime: _gig.soundcheckTime,
+                            setting: _gig.setting,
+                            fee: _gig.fee,
+                            organizer: _gig.organizer,
+                            notes: _gig.notes,
                             setlists: _gig.setlists.where((s) => s.id != setlist.id).toList(),
                           );
                         });

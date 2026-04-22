@@ -7,7 +7,7 @@ class Gig {
   DateTime? date;
   String time;
   String soundcheckTime;
-  bool isOutdoor;
+  String setting;
   String fee;
   String organizer;
   String notes;
@@ -20,7 +20,7 @@ class Gig {
     this.date,
     this.time = '',
     this.soundcheckTime = '',
-    this.isOutdoor = false,
+    this.setting = '',
     this.fee = '',
     this.organizer = '',
     this.notes = '',

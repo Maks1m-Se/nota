@@ -2,23 +2,39 @@ import 'package:flutter/material.dart';
 import '../../models/gig.dart';
 import '../../theme/app_theme.dart';
 
-class AddGigDialog extends StatefulWidget {
-  const AddGigDialog({super.key});
+class EditGigDialog extends StatefulWidget {
+  final Gig gig;
+
+  const EditGigDialog({super.key, required this.gig});
 
   @override
-  State<AddGigDialog> createState() => _AddGigDialogState();
+  State<EditGigDialog> createState() => _EditGigDialogState();
 }
 
-class _AddGigDialogState extends State<AddGigDialog> {
-  final _nameController = TextEditingController();
-  final _venueController = TextEditingController();
-  final _timeController = TextEditingController();
-  final _soundcheckController = TextEditingController();
-  final _feeController = TextEditingController();
-  final _organizerController = TextEditingController();
-  final _notesController = TextEditingController();
+class _EditGigDialogState extends State<EditGigDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _venueController;
+  late final TextEditingController _timeController;
+  late final TextEditingController _soundcheckController;
+  late final TextEditingController _feeController;
+  late final TextEditingController _organizerController;
+  late final TextEditingController _notesController;
+  late final TextEditingController _settingController;
   DateTime? _selectedDate;
-  final _settingController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.gig.name);
+    _venueController = TextEditingController(text: widget.gig.venue);
+    _timeController = TextEditingController(text: widget.gig.time);
+    _soundcheckController = TextEditingController(text: widget.gig.soundcheckTime);
+    _feeController = TextEditingController(text: widget.gig.fee);
+    _organizerController = TextEditingController(text: widget.gig.organizer);
+    _notesController = TextEditingController(text: widget.gig.notes);
+    _settingController = TextEditingController(text: widget.gig.setting);
+    _selectedDate = widget.gig.date;
+  }
 
   @override
   void dispose() {
@@ -35,8 +51,8 @@ class _AddGigDialogState extends State<AddGigDialog> {
 
   void _submit() {
     if (_nameController.text.trim().isEmpty) return;
-    final gig = Gig(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    final updated = Gig(
+      id: widget.gig.id,
       name: _nameController.text.trim(),
       venue: _venueController.text.trim(),
       date: _selectedDate,
@@ -46,15 +62,16 @@ class _AddGigDialogState extends State<AddGigDialog> {
       fee: _feeController.text.trim(),
       organizer: _organizerController.text.trim(),
       notes: _notesController.text.trim(),
+      setlists: widget.gig.setlists,
     );
-    Navigator.of(context).pop(gig);
+    Navigator.of(context).pop(updated);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppTheme.surfaceColor,
-      title: const Text('New Gig', style: TextStyle(color: AppTheme.textPrimary)),
+      title: const Text('Edit Gig', style: TextStyle(color: AppTheme.textPrimary)),
       content: SizedBox(
         width: 500,
         child: SingleChildScrollView(
@@ -63,7 +80,7 @@ class _AddGigDialogState extends State<AddGigDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _label('Name *'),
-              _field(_nameController, 'e.g. Stadtfest', autofocus: true),
+              _field(_nameController, 'e.g. Stadtfest'),
               const SizedBox(height: 12),
               _label('Venue'),
               _field(_venueController, 'e.g. Marktplatz'),
@@ -79,7 +96,7 @@ class _AddGigDialogState extends State<AddGigDialog> {
                           onTap: () async {
                             final date = await showDatePicker(
                               context: context,
-                              initialDate: DateTime.now(),
+                              initialDate: _selectedDate ?? DateTime.now(),
                               firstDate: DateTime(2020),
                               lastDate: DateTime(2030),
                             );
@@ -128,7 +145,7 @@ class _AddGigDialogState extends State<AddGigDialog> {
               const SizedBox(height: 12),
               _label('Setting'),
               _field(_settingController, 'e.g. Indoor, Outdoor, Zelt...'),
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               _label('Fee'),
               _field(_feeController, 'e.g. 500€'),
               const SizedBox(height: 12),
@@ -152,7 +169,7 @@ class _AddGigDialogState extends State<AddGigDialog> {
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
           ),
-          child: const Text('Create'),
+          child: const Text('Save'),
         ),
       ],
     );
@@ -163,10 +180,9 @@ class _AddGigDialogState extends State<AddGigDialog> {
     child: Text(text, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
   );
 
-  Widget _field(TextEditingController controller, String hint, {bool autofocus = false, int maxLines = 1}) =>
+  Widget _field(TextEditingController controller, String hint, {int maxLines = 1}) =>
     TextField(
       controller: controller,
-      autofocus: autofocus,
       maxLines: maxLines,
       style: const TextStyle(color: AppTheme.textPrimary),
       decoration: InputDecoration(

@@ -46,14 +46,12 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
   }
 
   void _onPanStart(DragStartDetails details) {
-    debugPrint('Pan start: ${details.localPosition}');
     if (!widget.editable) return;
     setState(() {
       _currentStroke = DrawingStroke(
         points: [details.localPosition],
-        color: widget.isEraser
-            ? const Color(0xFFF5F5F5)
-            : widget.selectedColor,
+        widths: [widget.selectedWidth],
+        color: widget.isEraser ? const Color(0xFFF5F5F5) : widget.selectedColor,
         width: widget.selectedWidth,
         isEraser: widget.isEraser,
       );
@@ -62,9 +60,27 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
 
   void _onPanUpdate(DragUpdateDetails details) {
     if (!widget.editable || _currentStroke == null) return;
+    
+    final newPoint = details.localPosition;
+    final lastPoint = _currentStroke!.points.last;
+    final distance = (newPoint - lastPoint).distance;
+    
+    final minWidth = widget.selectedWidth * 0.05;
+    final maxWidth = widget.selectedWidth;
+    final speed = distance.clamp(0.0, 15.0);
+    final speedNormalized = (speed / 10.0).clamp(0.0, 1.0);
+    final velocityWidth = maxWidth - (speedNormalized * speedNormalized) * (maxWidth - minWidth);
+    
+    // Smooth: mix with last width
+    final lastWidth = _currentStroke!.widths.isNotEmpty
+        ? _currentStroke!.widths.last
+        : widget.selectedWidth;
+    final smoothWidth = lastWidth * 0.92 + velocityWidth * 0.08;
+
     setState(() {
       _currentStroke = DrawingStroke(
-        points: [..._currentStroke!.points, details.localPosition],
+        points: [..._currentStroke!.points, newPoint],
+        widths: [..._currentStroke!.widths, smoothWidth],
         color: _currentStroke!.color,
         width: _currentStroke!.width,
         isEraser: _currentStroke!.isEraser,
@@ -159,20 +175,30 @@ class _CanvasPainter extends CustomPainter {
 
   void _drawStroke(Canvas canvas, DrawingStroke stroke) {
     if (stroke.points.isEmpty) return;
-
-    final paint = Paint()
-      ..color = stroke.color
-      ..strokeWidth = stroke.width
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-
-    final path = Path();
-    path.moveTo(stroke.points.first.dx, stroke.points.first.dy);
-    for (int i = 1; i < stroke.points.length; i++) {
-      path.lineTo(stroke.points[i].dx, stroke.points[i].dy);
+    if (stroke.points.length == 1) {
+      final paint = Paint()
+        ..color = stroke.color
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(stroke.points.first, stroke.width / 2, paint);
+      return;
     }
-    canvas.drawPath(path, paint);
+
+    for (int i = 0; i < stroke.points.length - 1; i++) {
+      final p0 = stroke.points[i];
+      final p1 = stroke.points[i + 1];
+      final w = stroke.widths.isNotEmpty && i < stroke.widths.length
+          ? stroke.widths[i]
+          : stroke.width;
+
+      final paint = Paint()
+        ..color = stroke.color
+        ..strokeWidth = w
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+
+      canvas.drawLine(p0, p1, paint);
+    }
   }
 
   @override

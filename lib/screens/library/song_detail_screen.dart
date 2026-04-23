@@ -41,6 +41,14 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
     _background = widget.song.canvasBackground;
   }
 
+  @override
+  void didUpdateWidget(SongDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.song.canvasBackground != widget.song.canvasBackground) {
+      setState(() => _background = widget.song.canvasBackground);
+    }
+  }
+
   void _onStrokesChanged(List<DrawingStroke> strokes) {
     context.read<BandProvider>().updateSongStrokes(
       widget.bandId,

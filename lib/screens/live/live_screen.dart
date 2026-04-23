@@ -28,6 +28,14 @@ class _LiveScreenState extends State<LiveScreen> {
   late int _currentIndex;
   LiveMode _mode = LiveMode.withSidebar;
   double _dragStart = 0;
+  bool _showFullscreenOverlay = false;
+
+  void _toggleFullscreenOverlay() {
+    setState(() => _showFullscreenOverlay = true);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _showFullscreenOverlay = false);
+    });
+  }
 
   @override
   void initState() {
@@ -52,7 +60,7 @@ class _LiveScreenState extends State<LiveScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: _mode == LiveMode.fullscreen ? null : AppBar(
         title: Text(widget.setlist.name),
         actions: [
           IconButton(
@@ -83,57 +91,105 @@ class _LiveScreenState extends State<LiveScreen> {
         ],
       ),
       body: GestureDetector(
+        onTap: () {
+          if (_mode == LiveMode.fullscreen) {
+            _toggleFullscreenOverlay();
+          }
+        },
         onHorizontalDragStart: (details) => _dragStart = details.globalPosition.dx,
         onHorizontalDragEnd: (details) {
           final diff = details.globalPosition.dx - _dragStart;
           if (diff < -120) _next();
           if (diff > 120) _previous();
         },
-        child: _mode == LiveMode.setlistOnly
-            ? _SetlistView(
-                setlist: widget.setlist,
-                songs: widget.songs,
-                currentIndex: _currentIndex,
-                onSongTap: (i) => setState(() => _currentIndex = i),
-              )
-            : _mode == LiveMode.withSidebar
-                ? Row(
-                    children: [
-                      SizedBox(
-                        width: 200,
-                        child: _SetlistView(
-                          setlist: widget.setlist,
-                          songs: widget.songs,
-                          currentIndex: _currentIndex,
-                          onSongTap: (i) => setState(() => _currentIndex = i),
-                          useAbbreviation: true,
-                        ),
-                      ),
-                      const VerticalDivider(width: 1, color: AppTheme.surfaceColor),
-                      Expanded(
-                        child: _SongView(
-                          song: _currentSong,
-                          songs: widget.songs,
-                          currentIndex: _currentIndex,
-                          total: widget.songs.length,
-                          onNext: _next,
-                          onPrevious: _previous,
-                          singleSongMode: widget.singleSongMode,
-                          showCanvas: true,
-                        ),
-                      ),
-                    ],
-                  )
-                : _SongView(
-                    song: _currentSong,
+        child: Stack(
+          children: [
+            // Hauptinhalt
+            _mode == LiveMode.setlistOnly
+                ? _SetlistView(
+                    setlist: widget.setlist,
                     songs: widget.songs,
                     currentIndex: _currentIndex,
-                    total: widget.songs.length,
-                    onNext: _next,
-                    onPrevious: _previous,
-                    singleSongMode: widget.singleSongMode,
-                    showCanvas: true,
+                    onSongTap: (i) => setState(() => _currentIndex = i),
+                  )
+                : _mode == LiveMode.withSidebar
+                    ? Row(
+                        children: [
+                          SizedBox(
+                            width: 200,
+                            child: _SetlistView(
+                              setlist: widget.setlist,
+                              songs: widget.songs,
+                              currentIndex: _currentIndex,
+                              onSongTap: (i) => setState(() => _currentIndex = i),
+                              useAbbreviation: true,
+                            ),
+                          ),
+                          const VerticalDivider(width: 1, color: AppTheme.surfaceColor),
+                          Expanded(
+                            child: _SongView(
+                              onTap: () => _toggleFullscreenOverlay(),
+                              song: _currentSong,
+                              songs: widget.songs,
+                              currentIndex: _currentIndex,
+                              total: widget.songs.length,
+                              onNext: _next,
+                              onPrevious: _previous,
+                              singleSongMode: widget.singleSongMode,
+                              showCanvas: true,
+                            ),
+                          ),
+                        ],
+                      )
+                    : _SongView(
+                        onTap: () => _toggleFullscreenOverlay(),
+                        song: _currentSong,
+                        songs: widget.songs,
+                        currentIndex: _currentIndex,
+                        total: widget.songs.length,
+                        onNext: _next,
+                        onPrevious: _previous,
+                        singleSongMode: widget.singleSongMode,
+                        showCanvas: true,
+                      ),
+            // Fullscreen Overlay
+            if (_mode == LiveMode.fullscreen && _showFullscreenOverlay)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.crop_square, color: Colors.white),
+                          onPressed: () => setState(() => _mode = LiveMode.fullscreen),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.view_sidebar, color: Colors.white),
+                          onPressed: () => setState(() => _mode = LiveMode.withSidebar),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.list, color: Colors.white),
+                          onPressed: () => setState(() => _mode = LiveMode.setlistOnly),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -148,6 +204,7 @@ class _SongView extends StatefulWidget {
   final VoidCallback onPrevious;
   final bool singleSongMode;
   final bool showCanvas;
+  final VoidCallback? onTap;
 
   const _SongView({
     required this.song,
@@ -158,6 +215,7 @@ class _SongView extends StatefulWidget {
     required this.onPrevious,
     this.singleSongMode = false,
     this.showCanvas = false,
+    this.onTap,
   });
 
   @override
@@ -187,7 +245,10 @@ class _SongViewState extends State<_SongView> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _toggleOverlay,
+      onTap: () {
+        _toggleOverlay();
+        widget.onTap?.call();
+      },
       child: Stack(
         children: [
           // Canvas füllt alles
@@ -464,16 +525,6 @@ class _SetlistView extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(song.key, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.bold)),
-                        ),
-                      if (song.bpm != null)
-                        Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text('${song.bpm} BPM', style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12)),
                         ),
                       if (song.hasSolo)
                         Container(

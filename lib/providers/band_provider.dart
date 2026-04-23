@@ -93,7 +93,7 @@ class BandProvider extends ChangeNotifier {
             date: g['date'] != null ? DateTime.parse(g['date']) : null,
             time: g['time'] ?? '',
             soundcheckTime: g['soundcheckTime'] ?? '',
-            setting: g['setting'] ?? g['isOutdoor'] == true ? 'Outdoor' : '',
+            setting: g['setting'] ?? (g['isOutdoor'] == true ? 'Outdoor' : ''),
             fee: g['fee'] ?? '',
             organizer: g['organizer'] ?? '',
             notes: g['notes'] ?? '',

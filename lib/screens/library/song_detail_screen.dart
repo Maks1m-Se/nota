@@ -32,7 +32,14 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
   double _selectedWidth = 2.0;
   bool _isEraser = false;
   CanvasBackground _background = CanvasBackground.dark;
+  int _pointerCount = 0;
   DrawingTool _activeTool = DrawingTool.pen;
+
+  @override
+  void initState() {
+    super.initState();
+    _background = widget.song.canvasBackground;
+  }
 
   void _onStrokesChanged(List<DrawingStroke> strokes) {
     context.read<BandProvider>().updateSongStrokes(
@@ -175,13 +182,42 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
             onColorChanged: (c) => setState(() => _selectedColor = c),
             onWidthChanged: (w) => setState(() => _selectedWidth = w),
             onEraserToggled: (e) => setState(() => _isEraser = e),
-            onBackgroundChanged: (b) => setState(() => _background = b),
+            onBackgroundChanged: (b) {
+              setState(() => _background = b);
+              final updated = Song(
+                id: song.id,
+                title: song.title,
+                artist: song.artist,
+                key: song.key,
+                bpm: song.bpm,
+                notes: song.notes,
+                abbreviation: song.abbreviation,
+                intro: song.intro,
+                outro: song.outro,
+                hasSolo: song.hasSolo,
+                hasBacking: song.hasBacking,
+                canvasBackground: b,
+                strokes: song.strokes,
+                quickStrokes: song.quickStrokes,
+              );
+              context.read<BandProvider>().updateSong(widget.bandId, updated);
+            },
           ),
           // Canvas
+          // Canvas
           Expanded(
+            child: Listener(
+              onPointerDown: (_) => setState(() => _pointerCount++),
+              onPointerUp: (_) => setState(() => _pointerCount--),
+              onPointerCancel: (_) => setState(() => _pointerCount--),
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                panEnabled: _pointerCount >= 2,
+                scaleEnabled: _pointerCount >= 2,
                 child: DrawingCanvas(
                   strokes: song.strokes,
-                  editable: true,
+                  editable: _pointerCount < 2,
                   selectedColor: _selectedColor,
                   selectedWidth: _selectedWidth,
                   isEraser: _isEraser,
@@ -198,6 +234,8 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                   },
                 ),
               ),
+            ),
+          ),
         ],
       ),
     );

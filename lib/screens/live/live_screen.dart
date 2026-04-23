@@ -258,7 +258,7 @@ class _SongViewState extends State<_SongView> {
                           child: DrawingCanvas(
                             strokes: widget.song.strokes,
                             editable: false,
-                            background: CanvasBackground.dark,
+                            background: widget.song.canvasBackground,
                           ),
                         ),
                       )

@@ -1,4 +1,5 @@
 import 'drawing_stroke.dart';
+import '../widgets/drawing_canvas.dart';
 
 class Song {
   final String id;
@@ -14,6 +15,7 @@ class Song {
   bool hasBacking;
   List<DrawingStroke> strokes;
   List<DrawingStroke> quickStrokes;
+  CanvasBackground canvasBackground;
 
   Song({
     required this.id,
@@ -27,6 +29,7 @@ class Song {
     this.outro = '',
     this.hasSolo = false,
     this.hasBacking = false,
+    this.canvasBackground = CanvasBackground.dark,
     List<DrawingStroke>? strokes,
     List<DrawingStroke>? quickStrokes,
   }) : strokes = strokes ?? [],

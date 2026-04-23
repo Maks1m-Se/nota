@@ -7,6 +7,7 @@ import '../models/setlist.dart';
 import '../models/song_slot.dart';
 import '../models/gig.dart';
 import '../models/drawing_stroke.dart';
+import '../widgets/drawing_canvas.dart';
 
 class BandProvider extends ChangeNotifier {
   static const _storageKey = 'nota_data';
@@ -70,6 +71,10 @@ class BandProvider extends ChangeNotifier {
             quickStrokes: (s['quickStrokes'] as List? ?? [])
                 .map((stroke) => DrawingStroke.fromJson(stroke))
                 .toList(),
+            canvasBackground: CanvasBackground.values.firstWhere(
+              (e) => e.name == s['canvasBackground'],
+              orElse: () => CanvasBackground.dark,
+            ),
           )).toList();
         });
         _setlists = {};
@@ -146,6 +151,7 @@ class BandProvider extends ChangeNotifier {
           'hasBacking': s.hasBacking,
           'strokes': s.strokes.map((stroke) => stroke.toJson()).toList(),
           'quickStrokes': s.quickStrokes.map((stroke) => stroke.toJson()).toList(),
+          'canvasBackground': s.canvasBackground.name,
         }).toList(),
       )),
       'setlists': _setlists.map((bandId, setlists) => MapEntry(

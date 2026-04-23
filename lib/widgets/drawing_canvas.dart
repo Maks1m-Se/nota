@@ -61,6 +61,10 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
     if (oldWidget.strokes != widget.strokes) {
       _strokes = List.from(widget.strokes);
     }
+    // Strich abbrechen wenn nicht mehr editierbar (z.B. zweiter Finger)
+    if (!widget.editable && _currentStroke != null) {
+      setState(() => _currentStroke = null);
+    }
   }
 
   Color _getBackgroundColor(CanvasBackground background) {

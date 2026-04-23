@@ -310,16 +310,20 @@ class _SongViewState extends State<_SongView> {
               // Canvas
               Expanded(
                 child: widget.showCanvas
-                    ? FittedBox(
-                        fit: BoxFit.contain,
-                        alignment: Alignment.topLeft,
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width,
-                          height: MediaQuery.of(context).size.height,
-                          child: DrawingCanvas(
-                            strokes: widget.song.strokes,
-                            editable: false,
-                            background: widget.song.canvasBackground,
+                    ? ClipRect(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) => FittedBox(
+                            fit: BoxFit.fill,
+                            alignment: Alignment.topLeft,
+                            child: SizedBox(
+                              width: constraints.maxWidth,
+                              height: constraints.maxHeight,
+                              child: DrawingCanvas(
+                                strokes: widget.song.strokes,
+                                editable: false,
+                                background: widget.song.canvasBackground,
+                              ),
+                            ),
                           ),
                         ),
                       )

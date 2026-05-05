@@ -16,6 +16,11 @@ class DrawingToolbar extends StatefulWidget {
   final Function(double) onWidthChanged;
   final Function(bool) onEraserToggled;
   final Function(CanvasBackground) onBackgroundChanged;
+  final bool chordChartEditMode;
+  final VoidCallback? onLoadPdf;
+  final VoidCallback? onToggleChordChartEdit;
+  final VoidCallback? onRemoveChordChart;
+  final bool hasChordChart;
 
   const DrawingToolbar({
     super.key,
@@ -29,6 +34,11 @@ class DrawingToolbar extends StatefulWidget {
     required this.onWidthChanged,
     required this.onEraserToggled,
     required this.onBackgroundChanged,
+    this.chordChartEditMode = false,
+    this.onLoadPdf,
+    this.onToggleChordChartEdit,
+    this.onRemoveChordChart,
+    this.hasChordChart = false,
   });
 
   @override
@@ -368,6 +378,29 @@ class _DrawingToolbarState extends State<DrawingToolbar> {
           ),
 
           const Spacer(),
+
+          // Chord Chart Buttons
+          if (widget.hasChordChart) ...[
+            IconButton(
+              icon: Icon(
+                Icons.open_with,
+                color: widget.chordChartEditMode ? AppTheme.primaryColor : AppTheme.textMuted,
+                size: 20,
+              ),
+              onPressed: widget.onToggleChordChartEdit,
+              tooltip: 'Move/Scale Chart',
+            ),
+            IconButton(
+              icon: const Icon(Icons.image_not_supported_outlined, color: Colors.red, size: 20),
+              onPressed: widget.onRemoveChordChart,
+              tooltip: 'Remove Chart',
+            ),
+          ],
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf, color: AppTheme.textMuted, size: 20),
+            onPressed: widget.onLoadPdf,
+            tooltip: 'Load PDF',
+          ),
 
           // Undo + Clear
           IconButton(

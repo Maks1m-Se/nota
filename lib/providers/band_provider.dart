@@ -75,6 +75,10 @@ class BandProvider extends ChangeNotifier {
               (e) => e.name == s['canvasBackground'],
               orElse: () => CanvasBackground.dark,
             ),
+            chordChartBase64: s['chordChartBase64'],
+            chordChartX: (s['chordChartX'] ?? 0.0).toDouble(),
+            chordChartY: (s['chordChartY'] ?? 0.0).toDouble(),
+            chordChartScale: (s['chordChartScale'] ?? 1.0).toDouble(),
           )).toList();
         });
         _setlists = {};
@@ -105,6 +109,11 @@ class BandProvider extends ChangeNotifier {
             setlists: (g['setlists'] as List).map((sl) => Setlist(
               id: sl['id'],
               name: sl['name'],
+              slots: (sl['slots'] as List? ?? []).map((slot) => SongSlot(
+                id: slot['id'],
+                songId: slot['songId'],
+                order: slot['order'],
+              )).toList(),
             )).toList(),
           )).toList();
         });
@@ -152,6 +161,10 @@ class BandProvider extends ChangeNotifier {
           'strokes': s.strokes.map((stroke) => stroke.toJson()).toList(),
           'quickStrokes': s.quickStrokes.map((stroke) => stroke.toJson()).toList(),
           'canvasBackground': s.canvasBackground.name,
+          'chordChartBase64': s.chordChartBase64,
+          'chordChartX': s.chordChartX,
+          'chordChartY': s.chordChartY,
+          'chordChartScale': s.chordChartScale,
         }).toList(),
       )),
       'setlists': _setlists.map((bandId, setlists) => MapEntry(
@@ -182,6 +195,11 @@ class BandProvider extends ChangeNotifier {
           'setlists': g.setlists.map((sl) => {
             'id': sl.id,
             'name': sl.name,
+            'slots': sl.slots.map((slot) => {
+              'id': slot.id,
+              'songId': slot.songId,
+              'order': slot.order,
+            }).toList(),
           }).toList(),
         }).toList(),
       )),

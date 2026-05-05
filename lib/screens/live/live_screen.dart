@@ -260,7 +260,9 @@ class _SongViewState extends State<_SongView> {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
                 child: Row(
                   children: [
-                    Expanded(
+                    // Titel mit fester Breite
+                    SizedBox(
+                      width: 400,
                       child: Text(
                         widget.song.title,
                         style: const TextStyle(
@@ -271,20 +273,24 @@ class _SongViewState extends State<_SongView> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (widget.song.key.isNotEmpty) ...[
-                      const SizedBox(width: 16),
-                      Text(
-                        widget.song.key,
-                        style: const TextStyle(
-                          color: AppTheme.primaryColor,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                    // Tab-Stop: Key immer an fester Position
+                    SizedBox(
+                      width: 80,
+                      child: widget.song.key.isNotEmpty
+                          ? Text(
+                              widget.song.key,
+                              style: const TextStyle(
+                                color: AppTheme.primaryColor,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
+                    ),
+                    // S/B Badges
                     if (widget.song.hasSolo)
                       Container(
-                        margin: const EdgeInsets.only(left: 12),
+                        margin: const EdgeInsets.only(right: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.red.withValues(alpha: 0.2),
@@ -295,7 +301,7 @@ class _SongViewState extends State<_SongView> {
                       ),
                     if (widget.song.hasBacking)
                       Container(
-                        margin: const EdgeInsets.only(left: 8),
+                        margin: const EdgeInsets.only(right: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.blue.withValues(alpha: 0.2),
@@ -304,6 +310,37 @@ class _SongViewState extends State<_SongView> {
                         ),
                         child: const Text('B', style: TextStyle(color: Colors.blue, fontSize: 18, fontWeight: FontWeight.bold)),
                       ),
+                    // Trennlinie + Intro/Outro
+                    if (widget.song.intro.isNotEmpty || widget.song.outro.isNotEmpty) ...[
+                      Container(
+                        width: 1,
+                        height: 32,
+                        color: AppTheme.textMuted,
+                        margin: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      if (widget.song.intro.isNotEmpty)
+                        Row(
+                          children: [
+                            const Text('↑ ', style: TextStyle(color: AppTheme.textMuted, fontSize: 16)),
+                            Text(
+                              widget.song.intro,
+                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      if (widget.song.intro.isNotEmpty && widget.song.outro.isNotEmpty)
+                        const SizedBox(width: 16),
+                      if (widget.song.outro.isNotEmpty)
+                        Row(
+                          children: [
+                            const Text('→ ', style: TextStyle(color: AppTheme.textMuted, fontSize: 16)),
+                            Text(
+                              widget.song.outro,
+                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                    ],
                   ],
                 ),
               ),

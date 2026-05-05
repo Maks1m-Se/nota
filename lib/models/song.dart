@@ -16,6 +16,10 @@ class Song {
   List<DrawingStroke> strokes;
   List<DrawingStroke> quickStrokes;
   CanvasBackground canvasBackground;
+  String? chordChartBase64;
+  double chordChartX;
+  double chordChartY;
+  double chordChartScale;
 
   Song({
     required this.id,
@@ -30,6 +34,10 @@ class Song {
     this.hasSolo = false,
     this.hasBacking = false,
     this.canvasBackground = CanvasBackground.dark,
+    this.chordChartBase64,
+    this.chordChartX = 0.0,
+    this.chordChartY = 0.0,
+    this.chordChartScale = 1.0,
     List<DrawingStroke>? strokes,
     List<DrawingStroke>? quickStrokes,
   }) : strokes = strokes ?? [],

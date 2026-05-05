@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/drawing_stroke.dart';
+import 'dart:ui' as ui;
+import 'dart:convert';
 
 enum CanvasBackground {
   dark,
@@ -23,6 +25,12 @@ class DrawingCanvas extends StatefulWidget {
   final VoidCallback? onUndo;
   final VoidCallback? onDoublePenButton;
   final Function(bool)? onEraserToggled;
+  final String? chordChartBase64;
+  final double chordChartX;
+  final double chordChartY;
+  final double chordChartScale;
+  final bool chordChartEditMode;
+  final Function(double x, double y, double scale)? onChordChartChanged;
 
   const DrawingCanvas({
     super.key,
@@ -36,6 +44,12 @@ class DrawingCanvas extends StatefulWidget {
     this.onUndo,
     this.onDoublePenButton,
     this.onEraserToggled,
+    this.chordChartBase64,
+    this.chordChartX = 0.0,
+    this.chordChartY = 0.0,
+    this.chordChartScale = 1.0,
+    this.chordChartEditMode = false,
+    this.onChordChartChanged,
   });
 
   @override
@@ -48,11 +62,23 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
   DateTime? _buttonPressTime;
   DateTime? _lastButtonPressTime;
   bool _eraserActive = false;
+  ui.Image? _chordChartImage;
+  late double _chartX;
+  late double _chartY;
+  late double _chartScale;
+  Offset? _chartDragStart;
+  double? _chartScaleStart;
 
   @override
   void initState() {
     super.initState();
     _strokes = List.from(widget.strokes);
+    _chartX = widget.chordChartX;
+    _chartY = widget.chordChartY;
+    _chartScale = widget.chordChartScale;
+    if (widget.chordChartBase64 != null) {
+      _loadChordChart(widget.chordChartBase64!);
+    }
   }
 
   @override
@@ -61,9 +87,15 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
     if (oldWidget.strokes != widget.strokes) {
       _strokes = List.from(widget.strokes);
     }
-    // Strich abbrechen wenn nicht mehr editierbar (z.B. zweiter Finger)
     if (!widget.editable && _currentStroke != null) {
       setState(() => _currentStroke = null);
+    }
+    if (oldWidget.chordChartBase64 != widget.chordChartBase64) {
+      if (widget.chordChartBase64 != null) {
+        _loadChordChart(widget.chordChartBase64!);
+      } else {
+        setState(() => _chordChartImage = null);
+      }
     }
   }
 
@@ -77,6 +109,13 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
       default:
         return const Color(0xFFF5F5F5);
     }
+  }
+
+  Future<void> _loadChordChart(String base64) async {
+    final bytes = base64Decode(base64);
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    setState(() => _chordChartImage = frame.image);
   }
 
   @override
@@ -187,11 +226,30 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
         width: double.infinity,
         height: double.infinity,
         color: _getBackgroundColor(widget.background),
-        child: CustomPaint(
-          painter: _CanvasPainter(
-            strokes: _strokes,
-            currentStroke: _currentStroke,
-            background: widget.background,
+        child: GestureDetector(
+          onScaleStart: widget.chordChartEditMode ? (details) {
+            _chartDragStart = details.focalPoint;
+            _chartScaleStart = _chartScale;
+          } : null,
+          onScaleUpdate: widget.chordChartEditMode ? (details) {
+            setState(() {
+              final delta = details.focalPoint - _chartDragStart!;
+              _chartX = widget.chordChartX + delta.dx;
+              _chartY = widget.chordChartY + delta.dy;
+              _chartScale = (_chartScaleStart! * details.scale).clamp(0.1, 5.0);
+            });
+            widget.onChordChartChanged?.call(_chartX, _chartY, _chartScale);
+          } : null,
+          child: CustomPaint(
+            painter: _CanvasPainter(
+              strokes: _strokes,
+              currentStroke: _currentStroke,
+              background: widget.background,
+              chordChartImage: _chordChartImage,
+              chartX: _chartX,
+              chartY: _chartY,
+              chartScale: _chartScale,
+            ),
           ),
         ),
       ),
@@ -203,11 +261,19 @@ class _CanvasPainter extends CustomPainter {
   final List<DrawingStroke> strokes;
   final DrawingStroke? currentStroke;
   final CanvasBackground background;
+  final ui.Image? chordChartImage;
+  final double chartX;
+  final double chartY;
+  final double chartScale;
 
   _CanvasPainter({
     required this.strokes,
     this.currentStroke,
     required this.background,
+    this.chordChartImage,
+    this.chartX = 0.0,
+    this.chartY = 0.0,
+    this.chartScale = 1.0,
   });
 
   Color _lineColor() {
@@ -312,6 +378,15 @@ class _CanvasPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     _drawBackground(canvas, size);
+    // Chord Chart zeichnen
+    if (chordChartImage != null) {
+      canvas.save();
+      canvas.translate(chartX, chartY);
+      canvas.scale(chartScale);
+      final paint = Paint()..filterQuality = FilterQuality.medium;
+      canvas.drawImage(chordChartImage!, Offset.zero, paint);
+      canvas.restore();
+    }
     for (final stroke in strokes) {
       if (stroke.isEraser || stroke.color.a == 255) {
         _drawStroke(canvas, stroke);

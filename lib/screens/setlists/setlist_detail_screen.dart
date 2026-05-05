@@ -6,6 +6,7 @@ import '../../models/song_slot.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import '../live/live_screen.dart';
+import '../library/song_detail_screen.dart';
 
 class SetlistDetailScreen extends StatefulWidget {
   final Setlist setlist;
@@ -233,6 +234,53 @@ class _SetlistDetailScreenState extends State<SetlistDetailScreen> {
                       song.artist,
                       style: const TextStyle(color: AppTheme.textSecondary),
                     ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SongDetailScreen(
+                            song: song,
+                            bandId: widget.bandId,
+                          ),
+                        ),
+                      );
+                    },
+                    onLongPress: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: AppTheme.surfaceColor,
+                        builder: (context) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.edit, color: AppTheme.textPrimary),
+                              title: const Text('Edit Song', style: TextStyle(color: AppTheme.textPrimary)),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SongDetailScreen(
+                                      song: song,
+                                      bandId: widget.bandId,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                              title: const Text('Remove from Setlist', style: TextStyle(color: Colors.red)),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                _removeSong(index);
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      );
+                    },
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

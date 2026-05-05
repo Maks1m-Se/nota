@@ -9,6 +9,9 @@ import '../../widgets/drawing_toolbar.dart';
 import '../live/live_screen.dart';
 import '../../models/setlist.dart';
 import '../../models/song_slot.dart';
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import 'package:pdfx/pdfx.dart';
 
 class SongDetailScreen extends StatefulWidget {
   final Song song;
@@ -34,7 +37,9 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
   CanvasBackground _background = CanvasBackground.dark;
   int _pointerCount = 0;
   DrawingTool _activeTool = DrawingTool.pen;
+  bool _chordChartEditMode = false;
 
+  
   @override
   void initState() {
     super.initState();
@@ -55,6 +60,88 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
       widget.song.id,
       strokes,
     );
+  }
+
+  Future<void> _loadPdf(Song song) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
+      if (result == null || result.files.isEmpty) return;
+
+      final bytes = result.files.first.bytes ?? 
+          await result.files.first.xFile.readAsBytes();
+      
+      final document = await PdfDocument.openData(bytes);
+      final page = await document.getPage(1);
+      final image = await page.render(
+        width: page.width * 2,
+        height: page.height * 2,
+        format: PdfPageImageFormat.png,
+      );
+      await page.close();
+      await document.close();
+
+      if (image == null) return;
+
+      final base64 = base64Encode(image.bytes);
+      final updated = Song(
+        id: song.id,
+        title: song.title,
+        artist: song.artist,
+        key: song.key,
+        bpm: song.bpm,
+        notes: song.notes,
+        abbreviation: song.abbreviation,
+        intro: song.intro,
+        outro: song.outro,
+        hasSolo: song.hasSolo,
+        hasBacking: song.hasBacking,
+        canvasBackground: song.canvasBackground,
+        chordChartBase64: base64,
+        chordChartX: 0.0,
+        chordChartY: 0.0,
+        chordChartScale: 1.0,
+        strokes: song.strokes,
+        quickStrokes: song.quickStrokes,
+      );
+      if (mounted) {
+        context.read<BandProvider>().updateSong(widget.bandId, updated);
+        setState(() => _chordChartEditMode = true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading PDF: $e')),
+        );
+      }
+    }
+  }
+
+  void _removeChordChart(Song song) {
+    final updated = Song(
+      id: song.id,
+      title: song.title,
+      artist: song.artist,
+      key: song.key,
+      bpm: song.bpm,
+      notes: song.notes,
+      abbreviation: song.abbreviation,
+      intro: song.intro,
+      outro: song.outro,
+      hasSolo: song.hasSolo,
+      hasBacking: song.hasBacking,
+      canvasBackground: song.canvasBackground,
+      chordChartBase64: null,
+      chordChartX: 0.0,
+      chordChartY: 0.0,
+      chordChartScale: 1.0,
+      strokes: song.strokes,
+      quickStrokes: song.quickStrokes,
+    );
+    context.read<BandProvider>().updateSong(widget.bandId, updated);
+    setState(() => _chordChartEditMode = false);
   }
 
   void _undo(Song song) {
@@ -190,6 +277,11 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
             onColorChanged: (c) => setState(() => _selectedColor = c),
             onWidthChanged: (w) => setState(() => _selectedWidth = w),
             onEraserToggled: (e) => setState(() => _isEraser = e),
+            hasChordChart: song.chordChartBase64 != null,
+            chordChartEditMode: _chordChartEditMode,
+            onLoadPdf: () => _loadPdf(song),
+            onToggleChordChartEdit: () => setState(() => _chordChartEditMode = !_chordChartEditMode),
+            onRemoveChordChart: () => _removeChordChart(song),
             onBackgroundChanged: (b) {
               setState(() => _background = b);
               final updated = Song(
@@ -225,7 +317,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                 scaleEnabled: _pointerCount >= 2,
                 child: DrawingCanvas(
                   strokes: song.strokes,
-                  editable: _pointerCount < 2,
+                  editable: _pointerCount < 2 && !_chordChartEditMode,
                   selectedColor: _selectedColor,
                   selectedWidth: _selectedWidth,
                   isEraser: _isEraser,
@@ -239,6 +331,34 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                           ? DrawingTool.highlighter
                           : DrawingTool.pen;
                     });
+                  },
+                  chordChartBase64: song.chordChartBase64,
+                  chordChartX: song.chordChartX,
+                  chordChartY: song.chordChartY,
+                  chordChartScale: song.chordChartScale,
+                  chordChartEditMode: _chordChartEditMode,
+                  onChordChartChanged: (x, y, scale) {
+                    final updated = Song(
+                      id: song.id,
+                      title: song.title,
+                      artist: song.artist,
+                      key: song.key,
+                      bpm: song.bpm,
+                      notes: song.notes,
+                      abbreviation: song.abbreviation,
+                      intro: song.intro,
+                      outro: song.outro,
+                      hasSolo: song.hasSolo,
+                      hasBacking: song.hasBacking,
+                      canvasBackground: song.canvasBackground,
+                      chordChartBase64: song.chordChartBase64,
+                      chordChartX: x,
+                      chordChartY: y,
+                      chordChartScale: scale,
+                      strokes: song.strokes,
+                      quickStrokes: song.quickStrokes,
+                    );
+                    context.read<BandProvider>().updateSong(widget.bandId, updated);
                   },
                 ),
               ),

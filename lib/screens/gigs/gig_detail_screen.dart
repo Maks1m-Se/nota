@@ -5,6 +5,8 @@ import '../../models/song.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import '../live/live_screen.dart';
+import '../setlists/setlist_detail_screen.dart';
+import '../../models/setlist.dart';
 
 class GigDetailScreen extends StatefulWidget {
   final Gig gig;
@@ -108,11 +110,12 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
             child: ElevatedButton.icon(
               onPressed: _gig.setlists.isNotEmpty
                   ? () {
+                      final setlistSongs = context.read<BandProvider>().getSongsForSetlist(widget.bandId, _gig.setlists.first);
                       Navigator.of(context, rootNavigator: true).push(
                         MaterialPageRoute(
                           builder: (context) => LiveScreen(
                             setlist: _gig.setlists.first,
-                            songs: widget.songs,
+                            songs: setlistSongs,
                           ),
                         ),
                       );
@@ -197,16 +200,91 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
                 leading: Text('${i + 1}'.padLeft(2, '0'), style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
                 title: Text(setlist.name, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
                 subtitle: Text('${setlist.slots.length} Songs', style: const TextStyle(color: AppTheme.textSecondary)),
+                onTap: () {
+                  final setlistSongs = context.read<BandProvider>().getSongsForSetlist(widget.bandId, setlist);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SetlistDetailScreen(
+                        setlist: setlist,
+                        bandId: widget.bandId,
+                        songs: setlistSongs,
+                      ),
+                    ),
+                  );
+                },
+                onLongPress: () {
+                    final controller = TextEditingController(text: setlist.name);
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: AppTheme.surfaceColor,
+                        title: const Text('Rename Setlist', style: TextStyle(color: AppTheme.textPrimary)),
+                        content: TextField(
+                          controller: controller,
+                          autofocus: true,
+                          style: const TextStyle(color: AppTheme.textPrimary),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: AppTheme.backgroundColor,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              if (controller.text.trim().isEmpty) return;
+                              final updated = Setlist(
+                                id: setlist.id,
+                                name: controller.text.trim(),
+                                slots: setlist.slots,
+                              );
+                              setState(() {
+                                _gig = Gig(
+                                  id: _gig.id,
+                                  name: _gig.name,
+                                  venue: _gig.venue,
+                                  date: _gig.date,
+                                  time: _gig.time,
+                                  soundcheckTime: _gig.soundcheckTime,
+                                  setting: _gig.setting,
+                                  fee: _gig.fee,
+                                  organizer: _gig.organizer,
+                                  notes: _gig.notes,
+                                  setlists: _gig.setlists.map((s) => s.id == setlist.id ? updated : s).toList(),
+                                );
+                              });
+                              _save();
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryColor,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Save'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ElevatedButton.icon(
                       onPressed: () {
+                        final setlistSongs = context.read<BandProvider>().getSongsForSetlist(widget.bandId, setlist);
                         Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
                             builder: (context) => LiveScreen(
                               setlist: setlist,
-                              songs: widget.songs,
+                              songs: setlistSongs,
                             ),
                           ),
                         );

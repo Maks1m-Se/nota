@@ -2,7 +2,7 @@
 
 Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wurde – diese Datei zeigt warum.
 
-**Pflege-Regel:** Nach jedem Implementation-Chat ergänzt der Hub neue Entscheidungen, Edge-Cases und Konventionen hier.
+**Pflege-Regel:** Am Ende jeder inhaltlich wichtigen Session werden neue Entscheidungen, Edge-Cases und Konventionen hier ergänzt (siehe Session-Ende-Workflow in den Projekt-Anweisungen).
 
 ## Architektur-Entscheidungen
 

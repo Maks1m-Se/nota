@@ -1,12 +1,12 @@
 # Nota – Backlog
 
-**Letzter Stand:** 04.05.2026
+**Letzter Stand:** 05.05.2026
 
 ## Aktuell in Arbeit
 
 *Nichts. Letztes abgeschlossenes Feature: Chord Chart PDF Import als Hintergrund.*
 
-**Nächster Schritt:** Priorisierung der HOCH-Liste im Management-Hub.
+**Nächster Schritt:** PDF-Lag bei Chord Chart fixen, dann Priorisierung der HOCH-Liste.
 
 ## Prio HOCH (nächstes Feature wählen)
 

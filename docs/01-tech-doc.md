@@ -3,7 +3,7 @@
 **Projekt:** Nota
 **Repo:** github.com/Maks1m-Se/nota
 **Lokal:** `C:\Git\nota`
-**Letzter Stand:** 04.05.2026
+**Letzter Stand:** 05.05.2026
 
 ## Was ist Nota
 
@@ -106,90 +106,38 @@ git add . && git commit -m "..." && git push
 
 ## Chat-Architektur im Claude-Projekt
 
-Drei Chat-Arten mit klaren Rollen:
+Phasen-Modell, abhängig vom tatsächlichen Dispatch-Bedarf.
 
-### Management-Hub (Haupt-Chat)
+### Phase 1 (aktuell): Ein Chat für alles
 
-**Zweck:** Priorisierung, Architektur-Entscheidungen, Status-Tracking, Backlog-Pflege.
+Ein Chat `Nota` deckt Code, Bugs, Refactoring, Priorisierung und Architektur-Entscheidungen ab. Keine Chat-Typ-Trennung, kein dedizierter Hub.
 
-**Verwendung:** Start jeder Session. Bei Feature-Beginn: Hub generiert Prompt für Implementation-Chat (siehe unten). Bei Feature-Ende: Implementation-Chat übergibt Briefing zurück.
+**Begründung:** Solo-Code-Projekt. Es läuft fast ausschließlich Code-Arbeit, kein echter Dispatch-Bedarf zwischen Disziplinen. Hub + Implementation-Chats wären Overhead.
 
-**Was hier NICHT passiert:** Keine konkrete Code-Arbeit. Keine Bug-Jagd.
+**Disziplin im Single-Chat:**
+- Scope-Disziplin pro Arbeitssequenz (ein Feature, ein Bug, eine Priorisierung)
+- Bei ~150 Nachrichten Session-Ende einleiten und neuen Chat starten
+- Knowledge-Updates am Ende jeder inhaltlich wichtigen Session
 
-### Implementation-Chat
+### Phase 2 (geplant): Hub + Themen-Chats
 
-**Zweck:** Konkrete Implementierung **eines** Features.
+Wird eingeführt, sobald neue Disziplinen dazukommen, die echten Dispatch-Bedarf erzeugen (z.B. Logo-Design, Marketing). Geplante Struktur:
 
-**Regel:** Pro größerem Feature ein neuer Chat. Verhindert 200+ Nachrichten-Chats.
+- `Nota – Hub` – Session-Planung, Priorisierung, Dispatch zwischen Themen
+- `Nota – Code` – alle Implementation, Bugs, Refactoring
+- `Nota – Design` – Logo, Theming, Visuelles
+- weitere Themen-Chats analog
 
-**Was hier NICHT passiert:** Keine Priorisierungs-Diskussion (das macht der Hub). Keine parallelen Features.
+**Beim Phase-2-Switch zu definieren:**
+- Anker-Text-Templates für Cross-Chat-Übergaben (Hub → Themen-Chat, Themen-Chat → Hub)
+- Status-Update-Format (Themen-Chat → Hub, vermutlich session-basiert statt feature-basiert)
+- Anpassung der Projekt-Anweisungen pro Chat (jeder Themen-Chat bekommt eigene Anweisungen mit Scope und Cross-Chat-Hinweisen)
 
-### Bug-Chat (optional)
+### Phase 3: Weitere Themen
 
-**Zweck:** Spezifische Bug-Jagd mit viel Kontext.
+Weitere Themen-Chats analog ergänzen, sobald sich Disziplinen herausbilden, die regelmäßig auftauchen und sich gegenseitig stören würden.
 
-**Wann:** Nur wenn ein Bug länger dauert und Implementation-Chat sonst verschmutzt wird. Sonst Bug direkt im Implementation-Chat.
+### Cross-Projekt-Regel
 
-## Kommunikations-Prompts zwischen Chats
-
-### Hub → Implementation (Feature starten)
-
-Im Management-Hub generieren, dann in neuen Implementation-Chat einfügen:
-
----
-
-> Du bist mein Implementation-Chat für das Feature **[FEATURE-NAME]** der Nota-App.
->
-> **Scope dieses Chats:** Nur dieses Feature implementieren. Keine anderen Aufgaben.
->
-> **Kontext:** Siehe Knowledge-Base (Tech-Doc, Backlog, Transferwissen) für Stack, Konventionen und bisherige Entscheidungen.
->
-> **Konkretes Ziel:** [ZIEL aus dem Hub]
->
-> **Akzeptanzkriterien:**
-> - [Kriterium 1]
-> - [Kriterium 2]
->
-> **Out of Scope:** [was bewusst NICHT angefasst wird]
->
-> **Bekannte Berührungspunkte:** [Files, Modelle, Provider die wahrscheinlich angefasst werden]
->
-> Arbeitsweise: schrittweise, nach Kontext fragen wenn unklar, exakte Stellen nennen ("such X, ersetze mit Y"), bei längeren Refactorings ganzen Block. Hot Restart via Shift+R. Nach jedem Feature-Step: Bestätigung abwarten.
->
-> Bei Abschluss generierst du mir ein Hub-Briefing (siehe Format in Tech-Doc).
-
----
-
-### Implementation → Hub (Feature abschließen)
-
-Am Ende des Implementation-Chats abfragen, dann ins Hub einfügen:
-
----
-
-> Erstelle ein Hub-Briefing für das Feature **[FEATURE-NAME]**. Format:
->
-> 1. **Was wurde gebaut:** kompakte Liste der Änderungen
-> 2. **Welche Dateien wurden angefasst:** Pfad + kurze Beschreibung
-> 3. **Neue Architektur-Entscheidungen:** mit Begründung (für Transferwissen)
-> 4. **Verworfene Ansätze in diesem Feature:** mit Grund
-> 5. **Neue Edge-Cases / Bugs gefunden:** wie gelöst
-> 6. **Neue Konventionen oder Patterns:** falls etabliert
-> 7. **Nicht erledigt / verschoben:** was war geplant, kam aber nicht durch
-> 8. **Hub-Updates nötig:**
->    - Tech-Doc: [welche Sektion ergänzen]
->    - Backlog: [was erledigt, was neu, was umpriorisiert]
->    - Transferwissen: [welche Sektion ergänzen]
->
-> Sei präzise, kurz, vollständig.
-
----
-
-### Bug-Chat starten (selten)
-
----
-
-> Du bist ein Bug-Jagd-Chat für die Nota-App. Ein Bug: **[BUG-BESCHREIBUNG]**.
->
-> Kontext siehe Knowledge-Base. Bisherige Versuche im Implementation-Chat: [ZUSAMMENFASSUNG].
->
-> Arbeite hypothesengetrieben: erst Vermutung, dann gezielte Diagnose-Schritte, dann Fix. Keine Spekulation ohne Verifikation.
+- Code-Seite von Backup (Flutter ↔ WebDAV) → Nota-Code-Chat (in Phase 1: einfach im `Nota`-Chat)
+- Server-/Infra-Seite (Nextcloud-Konfig, Pi) → Homecloud-Hub, nicht hier duplizieren

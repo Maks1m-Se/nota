@@ -1,22 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/song.dart';
 import '../../models/setlist.dart';
+import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/drawing_canvas.dart';
 
 enum LiveMode { fullscreen, withSidebar, setlistOnly }
 
+/// Item in der flachen Live-Sequenz: entweder ein Song oder eine Pause zwischen zwei Sets.
+class _LiveItem {
+  final Song? song; // null = Pause
+  final int setIndex;
+  final String currentSetName;
+  final String? nextSetName; // nur bei Pause
+
+  bool get isPause => song == null;
+
+  _LiveItem.song(this.song, this.setIndex, this.currentSetName) : nextSetName = null;
+  _LiveItem.pause(this.setIndex, this.currentSetName, this.nextSetName) : song = null;
+}
+
 class LiveScreen extends StatefulWidget {
-  final Setlist setlist;
-  final List<Song> songs;
-  final int initialIndex;
+  final List<Setlist> sets;
+  final String bandId;
+  final int initialSetIndex;
+  final int initialSongIndex;
   final bool singleSongMode;
 
   const LiveScreen({
     super.key,
-    required this.setlist,
-    required this.songs,
-    this.initialIndex = 0,
+    required this.sets,
+    required this.bandId,
+    this.initialSetIndex = 0,
+    this.initialSongIndex = 0,
     this.singleSongMode = false,
   });
 
@@ -25,6 +42,7 @@ class LiveScreen extends StatefulWidget {
 }
 
 class _LiveScreenState extends State<LiveScreen> {
+  late List<_LiveItem> _items;
   late int _currentIndex;
   LiveMode _mode = LiveMode.withSidebar;
   double _dragStart = 0;
@@ -40,13 +58,49 @@ class _LiveScreenState extends State<LiveScreen> {
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex;
+    _items = _buildItems();
+    _currentIndex = _findInitialIndex(widget.initialSetIndex, widget.initialSongIndex);
   }
 
-  Song get _currentSong => widget.songs[_currentIndex];
+  List<_LiveItem> _buildItems() {
+    final provider = context.read<BandProvider>();
+    final result = <_LiveItem>[];
+    for (int i = 0; i < widget.sets.length; i++) {
+      final set = widget.sets[i];
+      final songs = provider.getSongsForSetlist(widget.bandId, set);
+      for (final song in songs) {
+        result.add(_LiveItem.song(song, i, set.name));
+      }
+      if (i < widget.sets.length - 1) {
+        result.add(_LiveItem.pause(i, set.name, widget.sets[i + 1].name));
+      }
+    }
+    return result;
+  }
+
+  int _findInitialIndex(int setIdx, int songIdx) {
+    int songCount = 0;
+    for (int i = 0; i < _items.length; i++) {
+      final item = _items[i];
+      if (!item.isPause && item.setIndex == setIdx) {
+        if (songCount == songIdx) return i;
+        songCount++;
+      }
+    }
+    return 0;
+  }
+
+  _LiveItem get _currentItem => _items[_currentIndex];
+  bool get _hasMultipleSets => widget.sets.length > 1;
+
+  String get _appBarTitle {
+    if (_currentItem.isPause) return 'Pause';
+    if (_hasMultipleSets) return _currentItem.currentSetName;
+    return widget.sets.first.name;
+  }
 
   void _next() {
-    if (_currentIndex < widget.songs.length - 1) {
+    if (_currentIndex < _items.length - 1) {
       setState(() => _currentIndex++);
     }
   }
@@ -61,7 +115,7 @@ class _LiveScreenState extends State<LiveScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: _mode == LiveMode.fullscreen ? null : AppBar(
-        title: Text(widget.setlist.name),
+        title: Text(_appBarTitle),
         actions: [
           IconButton(
             icon: Icon(
@@ -91,6 +145,7 @@ class _LiveScreenState extends State<LiveScreen> {
         ],
       ),
       body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () {
           if (_mode == LiveMode.fullscreen) {
             _toggleFullscreenOverlay();
@@ -105,53 +160,7 @@ class _LiveScreenState extends State<LiveScreen> {
         child: Stack(
           children: [
             // Hauptinhalt
-            _mode == LiveMode.setlistOnly
-                ? _SetlistView(
-                    setlist: widget.setlist,
-                    songs: widget.songs,
-                    currentIndex: _currentIndex,
-                    onSongTap: (i) => setState(() => _currentIndex = i),
-                  )
-                : _mode == LiveMode.withSidebar
-                    ? Row(
-                        children: [
-                          SizedBox(
-                            width: 200,
-                            child: _SetlistView(
-                              setlist: widget.setlist,
-                              songs: widget.songs,
-                              currentIndex: _currentIndex,
-                              onSongTap: (i) => setState(() => _currentIndex = i),
-                              useAbbreviation: true,
-                            ),
-                          ),
-                          const VerticalDivider(width: 1, color: AppTheme.surfaceColor),
-                          Expanded(
-                            child: _SongView(
-                              onTap: () => _toggleFullscreenOverlay(),
-                              song: _currentSong,
-                              songs: widget.songs,
-                              currentIndex: _currentIndex,
-                              total: widget.songs.length,
-                              onNext: _next,
-                              onPrevious: _previous,
-                              singleSongMode: widget.singleSongMode,
-                              showCanvas: true,
-                            ),
-                          ),
-                        ],
-                      )
-                    : _SongView(
-                        onTap: () => _toggleFullscreenOverlay(),
-                        song: _currentSong,
-                        songs: widget.songs,
-                        currentIndex: _currentIndex,
-                        total: widget.songs.length,
-                        onNext: _next,
-                        onPrevious: _previous,
-                        singleSongMode: widget.singleSongMode,
-                        showCanvas: true,
-                      ),
+            _buildMainContent(),
             // Fullscreen Overlay
             if (_mode == LiveMode.fullscreen && _showFullscreenOverlay)
               Positioned(
@@ -193,13 +202,142 @@ class _LiveScreenState extends State<LiveScreen> {
       ),
     );
   }
+
+  Widget _buildMainContent() {
+    if (_mode == LiveMode.setlistOnly) {
+      return _SetlistView(
+        items: _items,
+        currentIndex: _currentIndex,
+        onSongTap: (i) => setState(() => _currentIndex = i),
+        showSetHeaders: _hasMultipleSets,
+      );
+    }
+
+    final centerView = _currentItem.isPause
+        ? _PauseView(
+            item: _currentItem,
+            nextSong: _currentIndex + 1 < _items.length
+                ? _items[_currentIndex + 1].song
+                : null,
+          )
+        : _SongView(
+            onTap: () => _toggleFullscreenOverlay(),
+            song: _currentItem.song!,
+            items: _items,
+            currentIndex: _currentIndex,
+            onNext: _next,
+            onPrevious: _previous,
+            singleSongMode: widget.singleSongMode,
+            showCanvas: true,
+          );
+
+    if (_mode == LiveMode.withSidebar) {
+      return Row(
+        children: [
+          SizedBox(
+            width: 200,
+            child: _SetlistView(
+              items: _items,
+              currentIndex: _currentIndex,
+              onSongTap: (i) => setState(() => _currentIndex = i),
+              useAbbreviation: true,
+              showSetHeaders: _hasMultipleSets,
+            ),
+          ),
+          const VerticalDivider(width: 1, color: AppTheme.surfaceColor),
+          Expanded(child: centerView),
+        ],
+      );
+    }
+
+    // Fullscreen
+    return centerView;
+  }
+}
+
+class _PauseView extends StatelessWidget {
+  final _LiveItem item;
+  final Song? nextSong;
+
+  const _PauseView({required this.item, this.nextSong});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'PAUSE',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 96,
+              fontWeight: FontWeight.w200,
+              letterSpacing: 12,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: 120,
+            height: 1,
+            color: AppTheme.textMuted.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            'Ende — ${item.currentSetName}',
+            style: const TextStyle(
+              color: AppTheme.textMuted,
+              fontSize: 14,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 40),
+          const Text(
+            'NÄCHSTES SET',
+            style: TextStyle(
+              color: AppTheme.textMuted,
+              fontSize: 11,
+              letterSpacing: 3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            item.nextSetName ?? '',
+            style: const TextStyle(
+              color: AppTheme.primaryColor,
+              fontSize: 36,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (nextSong != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              '↳ ${nextSong!.title}',
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 16,
+              ),
+            ),
+          ],
+          const SizedBox(height: 56),
+          Text(
+            'Swipe →',
+            style: TextStyle(
+              color: AppTheme.textMuted.withValues(alpha: 0.5),
+              fontSize: 14,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SongView extends StatefulWidget {
   final Song song;
-  final List<Song> songs;
+  final List<_LiveItem> items;
   final int currentIndex;
-  final int total;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
   final bool singleSongMode;
@@ -208,9 +346,8 @@ class _SongView extends StatefulWidget {
 
   const _SongView({
     required this.song,
-    required this.songs,
+    required this.items,
     required this.currentIndex,
-    required this.total,
     required this.onNext,
     required this.onPrevious,
     this.singleSongMode = false,
@@ -241,6 +378,29 @@ class _SongViewState extends State<_SongView> {
       if (mounted) setState(() => _showOverlay = false);
     });
   }
+
+  int get _songCount =>
+      widget.items.where((it) => !it.isPause).length;
+
+  int get _currentSongPosition {
+    int count = 0;
+    for (int i = 0; i <= widget.currentIndex; i++) {
+      if (!widget.items[i].isPause) count++;
+    }
+    return count;
+  }
+
+  /// Was kommt als nächstes auf einen Swipe? Zeigt "Pause" wenn das nächste Item eine Pause ist.
+  String? get _nextHintText {
+    if (widget.currentIndex >= widget.items.length - 1) return null;
+    final next = widget.items[widget.currentIndex + 1];
+    if (next.isPause) return 'Pause';
+    final song = next.song!;
+    return song.abbreviation.isNotEmpty ? song.abbreviation : song.title;
+  }
+
+  bool get _hasNext => widget.currentIndex < widget.items.length - 1;
+  bool get _hasPrevious => widget.currentIndex > 0;
 
   @override
   Widget build(BuildContext context) {
@@ -406,16 +566,14 @@ class _SongViewState extends State<_SongView> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (widget.currentIndex < widget.total - 1)
+                    if (_nextHintText != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              widget.songs[widget.currentIndex + 1].abbreviation.isNotEmpty
-                                  ? widget.songs[widget.currentIndex + 1].abbreviation
-                                  : widget.songs[widget.currentIndex + 1].title,
+                              _nextHintText!,
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 18,
@@ -428,7 +586,7 @@ class _SongViewState extends State<_SongView> {
                     Row(
                       children: [
                         OutlinedButton(
-                          onPressed: widget.currentIndex > 0 ? widget.onPrevious : null,
+                          onPressed: _hasPrevious ? widget.onPrevious : null,
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: const BorderSide(color: Colors.white54),
@@ -438,12 +596,12 @@ class _SongViewState extends State<_SongView> {
                         ),
                         const Spacer(),
                         Text(
-                          '${widget.currentIndex + 1} / ${widget.total}',
+                          '$_currentSongPosition / $_songCount',
                           style: const TextStyle(color: Colors.white70, fontSize: 13),
                         ),
                         const Spacer(),
                         ElevatedButton(
-                          onPressed: widget.currentIndex < widget.total - 1 ? widget.onNext : null,
+                          onPressed: _hasNext ? widget.onNext : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
                             foregroundColor: Colors.white,
@@ -464,142 +622,203 @@ class _SongViewState extends State<_SongView> {
 }
 
 class _SetlistView extends StatelessWidget {
-  final Setlist setlist;
-  final List<Song> songs;
+  final List<_LiveItem> items;
   final int currentIndex;
   final ValueChanged<int> onSongTap;
   final bool useAbbreviation;
+  final bool showSetHeaders;
 
   const _SetlistView({
-    required this.setlist,
-    required this.songs,
+    required this.items,
     required this.currentIndex,
     required this.onSongTap,
     this.useAbbreviation = false,
+    this.showSetHeaders = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    final widgets = <Widget>[];
+    String? lastSetName;
+    int songCounter = 0;
+
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (item.isPause) continue;
+
+      if (showSetHeaders && item.currentSetName != lastSetName) {
+        if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 8));
+        widgets.add(_SetHeader(name: item.currentSetName));
+        lastSetName = item.currentSetName;
+      }
+
+      songCounter++;
+      widgets.add(_SongTile(
+        song: item.song!,
+        position: songCounter,
+        isCurrent: i == currentIndex,
+        onTap: () => onSongTap(i),
+        useAbbreviation: useAbbreviation,
+      ));
+    }
+
+    return ListView(
       padding: const EdgeInsets.all(8),
-      itemCount: songs.length,
-      itemBuilder: (context, index) {
-        final song = songs[index];
-        final isCurrent = index == currentIndex;
-        return GestureDetector(
-          onTap: () => onSongTap(index),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.only(bottom: 4),
-            padding: EdgeInsets.all(isCurrent ? 10 : 8),
-            decoration: BoxDecoration(
-              color: isCurrent ? AppTheme.primaryColor.withValues(alpha: 0.15) : AppTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isCurrent ? AppTheme.primaryColor : Colors.transparent,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+}
+
+class _SetHeader extends StatelessWidget {
+  final String name;
+  const _SetHeader({required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 6),
+      child: Text(
+        name.toUpperCase(),
+        style: const TextStyle(
+          color: AppTheme.textMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _SongTile extends StatelessWidget {
+  final Song song;
+  final int position;
+  final bool isCurrent;
+  final VoidCallback onTap;
+  final bool useAbbreviation;
+
+  const _SongTile({
+    required this.song,
+    required this.position,
+    required this.isCurrent,
+    required this.onTap,
+    required this.useAbbreviation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 4),
+        padding: EdgeInsets.all(isCurrent ? 10 : 8),
+        decoration: BoxDecoration(
+          color: isCurrent ? AppTheme.primaryColor.withValues(alpha: 0.15) : AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isCurrent ? AppTheme.primaryColor : Colors.transparent,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Text(
-                      '${index + 1}'.padLeft(2, '0'),
-                      style: TextStyle(
-                        color: isCurrent ? AppTheme.primaryColor : AppTheme.textMuted,
-                        fontSize: isCurrent ? 13 : 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        useAbbreviation && song.abbreviation.isNotEmpty
-                            ? song.abbreviation
-                            : song.title,
-                        style: TextStyle(
-                          color: isCurrent ? AppTheme.textPrimary : AppTheme.textSecondary,
-                          fontSize: isCurrent ? 16 : 13,
-                          fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (!isCurrent) ...[
-                      if (song.key.isNotEmpty) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          song.key,
-                          style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12),
-                        ),
-                      ],
-                      if (song.hasSolo)
-                        Container(
-                          margin: const EdgeInsets.only(left: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                          child: const Text('S', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ),
-                      if (song.hasBacking)
-                        Container(
-                          margin: const EdgeInsets.only(left: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                          child: const Text('B', style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ),
-                    ],
-                  ],
-                ),
-                if (isCurrent) ...[
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      if (song.key.isNotEmpty)
-                        Container(
-                          margin: const EdgeInsets.only(right: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(song.key, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.bold)),
-                        ),
-                      if (song.hasSolo)
-                        Container(
-                          margin: const EdgeInsets.only(right: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.red),
-                          ),
-                          child: const Text('S', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ),
-                      if (song.hasBacking)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.blue),
-                          ),
-                          child: const Text('B', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
-                        ),
-                    ],
+                Text(
+                  '$position'.padLeft(2, '0'),
+                  style: TextStyle(
+                    color: isCurrent ? AppTheme.primaryColor : AppTheme.textMuted,
+                    fontSize: isCurrent ? 13 : 11,
+                    fontWeight: FontWeight.w500,
                   ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    useAbbreviation && song.abbreviation.isNotEmpty
+                        ? song.abbreviation
+                        : song.title,
+                    style: TextStyle(
+                      color: isCurrent ? AppTheme.textPrimary : AppTheme.textSecondary,
+                      fontSize: isCurrent ? 16 : 13,
+                      fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (!isCurrent) ...[
+                  if (song.key.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      song.key,
+                      style: const TextStyle(color: AppTheme.primaryColor, fontSize: 12),
+                    ),
+                  ],
+                  if (song.hasSolo)
+                    Container(
+                      margin: const EdgeInsets.only(left: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: const Text('S', style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                  if (song.hasBacking)
+                    Container(
+                      margin: const EdgeInsets.only(left: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: const Text('B', style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
                 ],
               ],
             ),
-          ),
-        );
-      },
+            if (isCurrent) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  if (song.key.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(song.key, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ),
+                  if (song.hasSolo)
+                    Container(
+                      margin: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.red),
+                      ),
+                      child: const Text('S', style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  if (song.hasBacking)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.blue),
+                      ),
+                      child: const Text('B', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

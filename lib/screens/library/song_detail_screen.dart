@@ -241,8 +241,8 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                 Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(
                     builder: (context) => LiveScreen(
-                      setlist: setlist,
-                      songs: [song],
+                      sets: [setlist],
+                      bandId: widget.bandId,
                       singleSongMode: true,
                     ),
                   ),

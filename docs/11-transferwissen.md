@@ -32,6 +32,25 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 - Kompakte Felder, Dialog reicht
 - Konsistenz zwischen Songs und Gigs
 
+**Chat-Architektur: Phasen-Modell statt Hub-from-Day-One**
+- Ursprünglich: Management-Hub + Implementation-Chats pro Feature + optionale Bug-Chats
+- Geändert: aktuell ein Chat für alles, weil Solo-Code-Projekt keinen Dispatch-Bedarf hat
+- Hub kommt zurück, sobald neue Disziplinen (Design, Marketing) dazukommen
+- Trade-off: Single-Chat füllt sich schneller, dafür kein Overhead durch Chat-Wechsel
+
+**LiveScreen API: flache Item-Liste mit Pause-Boundaries**
+- Statt `Setlist + List<Song>` nimmt LiveScreen jetzt `List<Setlist> sets + bandId + initialSet/SongIndex`
+- Intern wird eine flache Liste `_LiveItem` aufgebaut: Songs + Pause-Marker zwischen Sets
+- Songs werden zur Laufzeit via Provider aufgelöst (nicht vorab als Liste übergeben)
+- Vorteile: Multi-Set-Navigation einheitlich, Set-Grenzen explizit modelliert, Pause-Übergang Teil der normalen Swipe-Sequenz
+- Standalone-Setlist und Single-Song laufen über denselben Mechanismus (`sets = [eineSetlist]`)
+
+**PDF-Drag persistieren onEnd, nicht onUpdate**
+- Erste Version rief bei jedem `onScaleUpdate` (60Hz) `updateSong` mit komplettem `_save()` auf
+- `_save()` serialisiert den gesamten App-State inkl. Base64-PDFs nach SharedPreferences → 60×/s nicht haltbar
+- Fix: lokaler State während Drag, Persistierung erst auf `onScaleEnd`
+- Pattern für künftige Drag/Skalier-Operationen: niemals jeden Frame persistieren
+
 ## UX-/Design-Entscheidungen
 
 **Live-Modus Standard = WithSidebar**
@@ -137,6 +156,22 @@ g['setting'] ?? (g['isOutdoor'] == true ? 'Outdoor' : '')
 - Fix: `getSongsForSetlist()` verwenden
 - Auch wichtig für "first setlist Live"-Button im Gig
 
+**HitTestBehavior.opaque für GestureDetector mit nicht-vollflächigem Inhalt**
+- Pause-Screen war ein zentriertes `Column` ohne vollflächigen Inhalt → leere Bereiche waren keine Hit-Targets, Swipe/Tap funktionierten nicht
+- Fix: `behavior: HitTestBehavior.opaque` am äußeren GestureDetector
+- Lehre: bei wechselnden Inhalten (mal Canvas vollflächig, mal kompakter Inhalt) immer `opaque` setzen
+
+**PDF im Live-Modus: Properties müssen durchgereicht werden**
+- DrawingCanvas hat ChordChart-Properties mit Defaults (`null`, `0.0`, `1.0`)
+- Im Live-Modus wurden sie nicht übergeben → Chart unsichtbar, weil `chordChartBase64 == null`
+- Lehre: bei Widget-Erweiterungen alle Aufrufer prüfen, ob neue Properties durchgereicht werden müssen
+
+**Canvas-Strich-Cloning O(n²) (bekannt, nicht gefixt)**
+- In `onPointerMove` wird `_currentStroke` jedes Mal neu gebaut mit `[..._currentStroke!.points, newPoint]`
+- Bei 200 Punkten = 200 Kopien beim 200. Punkt
+- Symptome: verspätete Striche, Kurven werden zu Polylinien (Punkt-Drops durch Frame-Skip)
+- Fix verschoben: Backlog MITTEL "Canvas-Performance: Strich-Cloning O(n²) → mutable Append"
+
 ## Implizites Wissen / Konventionen
 
 **Modell-Updates – 4 Stellen prüfen**
@@ -161,6 +196,11 @@ Häufige Fehlerquelle: eine der vier Stellen vergessen.
 **UI-Patterns**
 - Long Press → Bottom Sheet (mehrere Aktionen) ODER direkter Dialog (eine Aktion)
 - Buttons mit "Live"-Endung = rot, sonst primary (lila)
+
+**Drag/Skalier-Operationen: Persist onEnd, nicht onUpdate**
+- Während Drag: nur lokaler State (Live-Visualisierung)
+- Beim Loslassen: einmal Callback → einmal `updateSong` → einmal `_save`
+- Gilt für jede Operation, die kontinuierliche Inputs erzeugt und teure Persistenz hat
 
 ## Persönliche Präferenzen / Stil
 

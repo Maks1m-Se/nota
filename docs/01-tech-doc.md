@@ -3,7 +3,7 @@
 **Projekt:** Nota
 **Repo:** github.com/Maks1m-Se/nota
 **Lokal:** `C:\Git\nota`
-**Letzter Stand:** 05.05.2026
+**Letzter Stand:** 06.05.2026
 
 ## Was ist Nota
 

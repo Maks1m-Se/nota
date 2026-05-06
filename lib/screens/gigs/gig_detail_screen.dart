@@ -110,12 +110,11 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
             child: ElevatedButton.icon(
               onPressed: _gig.setlists.isNotEmpty
                   ? () {
-                      final setlistSongs = context.read<BandProvider>().getSongsForSetlist(widget.bandId, _gig.setlists.first);
                       Navigator.of(context, rootNavigator: true).push(
                         MaterialPageRoute(
                           builder: (context) => LiveScreen(
-                            setlist: _gig.setlists.first,
-                            songs: setlistSongs,
+                            sets: _gig.setlists,
+                            bandId: widget.bandId,
                           ),
                         ),
                       );
@@ -279,12 +278,13 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () {
-                        final setlistSongs = context.read<BandProvider>().getSongsForSetlist(widget.bandId, setlist);
+                        final setIndex = _gig.setlists.indexOf(setlist);
                         Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
                             builder: (context) => LiveScreen(
-                              setlist: setlist,
-                              songs: setlistSongs,
+                              sets: _gig.setlists,
+                              bandId: widget.bandId,
+                              initialSetIndex: setIndex,
                             ),
                           ),
                         );

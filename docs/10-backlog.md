@@ -1,15 +1,20 @@
 # Nota – Backlog
 
-**Letzter Stand:** 05.05.2026
+**Letzter Stand:** 06.05.2026
 
 ## Aktuell in Arbeit
 
-*Nichts. Letztes abgeschlossenes Feature: Chord Chart PDF Import als Hintergrund.*
+*Nichts. Letztes abgeschlossenes Feature: Set-Übergang im Live-Modus mit Pause-Screen.*
 
-**Nächster Schritt:** PDF-Lag bei Chord Chart fixen, dann Priorisierung der HOCH-Liste.
+**Nächster Schritt:** Long-Press-Bug in Setlist/Gig fixen, dann weitere Pre-Gig-Items.
 
-## Prio HOCH (nächstes Feature wählen)
+**Termine:** Erste echte Live-Nutzung am 09.05.2026 und 10.05.2026.
 
+## Prio HOCH (vor Gigs am 09./10.05.)
+
+- [ ] Long-Press in Setlist/Gig öffnet Canvas statt Edit-Dialog
+- [ ] Canvas Vollbild konsistent: aus Setlist/Gig öffnet aktuell mit Sidebar, sollte wie Library Vollbild sein
+- [ ] Drag & Drop: Setlists innerhalb Gig + Songs innerhalb Gig-Setlist verschieben
 - [ ] Suche in Library
 - [ ] Mehrere Songs/Setlists gleichzeitig hinzufügen
 - [ ] Duplizieren von Songs/Setlists/Gigs
@@ -17,11 +22,13 @@
 
 ## Prio MITTEL
 
+- [ ] Live-Modus-Indikator (Konzept nach erstem Gig)
+- [ ] To-Practice-Feature (User-Wunsch hoch, aber nicht Gig-kritisch)
 - [ ] Setlist Template System
 - [ ] Gig Recap (Sterne, Highlights/Lowlights)
-- [ ] To Practice Feature
 - [ ] Abbreviation-Vorschläge automatisch
 - [ ] Gig Live Notes
+- [ ] Canvas-Performance: Strich-Cloning O(n²) → mutable Append (verspätete Striche / gerade Linien bei langem Schreiben)
 
 ## Prio NIEDRIG
 
@@ -45,10 +52,14 @@
 - Band Theming aus Logo: welche Farben extrahieren? Primary, Accent?
 - Gig Recap Timing: sofort nach Gig oder optional? Pflichtfelder?
 - PDF-Auflösung 2x – reicht das auf der Bühne? Im Alltag noch nicht getestet
+- Live-Modus-Indikator: welche Form (am Rand, AppBar-Färbung, kleiner Punkt)?
 
 ## Erledigt (chronologisch absteigend)
 
 **2026 (bis Mai):**
+- Set-Übergang im Live-Modus: Pause-Screen mit "PAUSE" + nächstem Set + nächstem Song, Swipe weiter, Sidebar-Headers pro Set, Next-Hint zeigt "Pause" am Set-Ende
+- PDF im Live-Modus sichtbar (Properties wurden nicht durchgereicht)
+- PDF-Lag beim Verschieben/Skalieren behoben (Save erst onScaleEnd statt 60×/s)
 - Chord Chart PDF Import als Hintergrund mit Verschieben/Skalieren
 - Live-Modus aus Gig spielt korrekt nur Setlist-Songs
 - Setting als Freitext (statt isOutdoor Boolean)

@@ -156,8 +156,8 @@ class _SetlistDetailScreenState extends State<SetlistDetailScreen> {
                       Navigator.of(context, rootNavigator: true).push(
                         MaterialPageRoute(
                           builder: (context) => LiveScreen(
-                            setlist: _setlist,
-                            songs: songs,
+                            sets: [_setlist],
+                            bandId: widget.bandId,
                           ),
                         ),
                       );

@@ -238,6 +238,8 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
               _chartY = widget.chordChartY + delta.dy;
               _chartScale = (_chartScaleStart! * details.scale).clamp(0.1, 5.0);
             });
+          } : null,
+          onScaleEnd: widget.chordChartEditMode ? (details) {
             widget.onChordChartChanged?.call(_chartX, _chartY, _chartScale);
           } : null,
           child: CustomPaint(

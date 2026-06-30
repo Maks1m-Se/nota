@@ -90,12 +90,15 @@ class _LiveScreenState extends State<LiveScreen> {
     return 0;
   }
 
-  _LiveItem get _currentItem => _items[_currentIndex];
+  _LiveItem? get _currentItem =>
+      _items.isEmpty ? null : _items[_currentIndex];
   bool get _hasMultipleSets => widget.sets.length > 1;
 
   String get _appBarTitle {
-    if (_currentItem.isPause) return 'Pause';
-    if (_hasMultipleSets) return _currentItem.currentSetName;
+    final item = _currentItem;
+    if (item == null) return 'Live';
+    if (item.isPause) return 'Pause';
+    if (_hasMultipleSets) return item.currentSetName;
     return widget.sets.first.name;
   }
 
@@ -204,6 +207,20 @@ class _LiveScreenState extends State<LiveScreen> {
   }
 
   Widget _buildMainContent() {
+    // Empty-State: keine Songs in den Sets
+    if (_items.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Diese Setliste enthält keine Songs.',
+            style: TextStyle(color: AppTheme.textMuted, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
     if (_mode == LiveMode.setlistOnly) {
       return _SetlistView(
         items: _items,
@@ -213,16 +230,17 @@ class _LiveScreenState extends State<LiveScreen> {
       );
     }
 
-    final centerView = _currentItem.isPause
+    final item = _currentItem!;
+    final centerView = item.isPause
         ? _PauseView(
-            item: _currentItem,
+            item: item,
             nextSong: _currentIndex + 1 < _items.length
                 ? _items[_currentIndex + 1].song
                 : null,
           )
         : _SongView(
             onTap: () => _toggleFullscreenOverlay(),
-            song: _currentItem.song!,
+            song: item.song!,
             items: _items,
             currentIndex: _currentIndex,
             onNext: _next,

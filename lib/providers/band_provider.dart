@@ -264,6 +264,23 @@ class BandProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void duplicateSetlist(String bandId, Setlist source) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final dup = Setlist(
+      id: timestamp.toString(),
+      name: '${source.name} (Copy)',
+      slots: source.slots.asMap().entries.map((e) => SongSlot(
+        id: '${timestamp}_${e.key}',
+        songId: e.value.songId,
+        order: e.value.order,
+      )).toList(),
+    );
+    _setlists[bandId] ??= [];
+    _setlists[bandId]!.add(dup);
+    _save();
+    notifyListeners();
+  }
+
   void deleteSetlist(String bandId, String setlistId) {
   _setlists[bandId]?.removeWhere((s) => s.id == setlistId);
   _save();
@@ -272,10 +289,26 @@ class BandProvider extends ChangeNotifier {
 
   void updateSetlist(String bandId, Setlist setlist) {
     final list = _setlists[bandId];
-    if (list == null) return;
-    final index = list.indexWhere((s) => s.id == setlist.id);
-    if (index != -1) {
-      list[index] = setlist;
+    bool changed = false;
+    if (list != null) {
+      final index = list.indexWhere((s) => s.id == setlist.id);
+      if (index != -1) {
+        list[index] = setlist;
+        changed = true;
+      }
+    }
+    // Auch in Gigs aktualisieren, wo diese Setliste vorkommt
+    final gigs = _gigs[bandId];
+    if (gigs != null) {
+      for (final gig in gigs) {
+        final sIndex = gig.setlists.indexWhere((s) => s.id == setlist.id);
+        if (sIndex != -1) {
+          gig.setlists[sIndex] = setlist;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
       _save();
       notifyListeners();
     }

@@ -189,140 +189,177 @@ class _GigDetailScreenState extends State<GigDetailScreen> {
               padding: EdgeInsets.all(16),
               child: Text('No setlists yet. Tap + to add one.', style: TextStyle(color: AppTheme.textMuted)),
             ),
-          ..._gig.setlists.asMap().entries.map((entry) {
-            final i = entry.key;
-            final setlist = entry.value;
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                leading: Text('${i + 1}'.padLeft(2, '0'), style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
-                title: Text(setlist.name, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
-                subtitle: Text('${setlist.slots.length} Songs', style: const TextStyle(color: AppTheme.textSecondary)),
-                onTap: () {
-                  final setlistSongs = context.read<BandProvider>().getSongsForSetlist(widget.bandId, setlist);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SetlistDetailScreen(
-                        setlist: setlist,
-                        bandId: widget.bandId,
-                        songs: setlistSongs,
-                      ),
-                    ),
+          if (_gig.setlists.isNotEmpty)
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: _gig.setlists.length,
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  if (newIndex > oldIndex) newIndex--;
+                  final list = List<Setlist>.from(_gig.setlists);
+                  final item = list.removeAt(oldIndex);
+                  list.insert(newIndex, item);
+                  _gig = Gig(
+                    id: _gig.id,
+                    name: _gig.name,
+                    venue: _gig.venue,
+                    date: _gig.date,
+                    time: _gig.time,
+                    soundcheckTime: _gig.soundcheckTime,
+                    setting: _gig.setting,
+                    fee: _gig.fee,
+                    organizer: _gig.organizer,
+                    notes: _gig.notes,
+                    setlists: list,
                   );
-                },
-                onLongPress: () {
-                    final controller = TextEditingController(text: setlist.name);
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        backgroundColor: AppTheme.surfaceColor,
-                        title: const Text('Rename Setlist', style: TextStyle(color: AppTheme.textPrimary)),
-                        content: TextField(
-                          controller: controller,
-                          autofocus: true,
-                          style: const TextStyle(color: AppTheme.textPrimary),
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: AppTheme.backgroundColor,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide.none,
-                            ),
+                });
+                _save();
+              },
+              itemBuilder: (context, i) {
+                final setlist = _gig.setlists[i];
+                return Card(
+                  key: ValueKey(setlist.id),
+                  margin: const EdgeInsets.only(bottom: 10),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: Text('${i + 1}'.padLeft(2, '0'), style: const TextStyle(color: AppTheme.textMuted, fontSize: 14)),
+                    title: Text(setlist.name, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
+                    subtitle: Text('${setlist.slots.length} Songs', style: const TextStyle(color: AppTheme.textSecondary)),
+                    onTap: () {
+                      final setlistSongs = context.read<BandProvider>().getSongsForSetlist(widget.bandId, setlist);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SetlistDetailScreen(
+                            setlist: setlist,
+                            bandId: widget.bandId,
+                            songs: setlistSongs,
                           ),
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+                      );
+                    },
+                    onLongPress: () {
+                      final controller = TextEditingController(text: setlist.name);
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: AppTheme.surfaceColor,
+                          title: const Text('Rename Setlist', style: TextStyle(color: AppTheme.textPrimary)),
+                          content: TextField(
+                            controller: controller,
+                            autofocus: true,
+                            style: const TextStyle(color: AppTheme.textPrimary),
+                            decoration: InputDecoration(
+                              filled: true,
+                              fillColor: AppTheme.backgroundColor,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
                           ),
-                          ElevatedButton(
-                            onPressed: () {
-                              if (controller.text.trim().isEmpty) return;
-                              final updated = Setlist(
-                                id: setlist.id,
-                                name: controller.text.trim(),
-                                slots: setlist.slots,
-                              );
-                              setState(() {
-                                _gig = Gig(
-                                  id: _gig.id,
-                                  name: _gig.name,
-                                  venue: _gig.venue,
-                                  date: _gig.date,
-                                  time: _gig.time,
-                                  soundcheckTime: _gig.soundcheckTime,
-                                  setting: _gig.setting,
-                                  fee: _gig.fee,
-                                  organizer: _gig.organizer,
-                                  notes: _gig.notes,
-                                  setlists: _gig.setlists.map((s) => s.id == setlist.id ? updated : s).toList(),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Cancel', style: TextStyle(color: AppTheme.textSecondary)),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                if (controller.text.trim().isEmpty) return;
+                                final updated = Setlist(
+                                  id: setlist.id,
+                                  name: controller.text.trim(),
+                                  slots: setlist.slots,
                                 );
-                              });
-                              _save();
-                              Navigator.of(context).pop();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
-                              foregroundColor: Colors.white,
+                                setState(() {
+                                  _gig = Gig(
+                                    id: _gig.id,
+                                    name: _gig.name,
+                                    venue: _gig.venue,
+                                    date: _gig.date,
+                                    time: _gig.time,
+                                    soundcheckTime: _gig.soundcheckTime,
+                                    setting: _gig.setting,
+                                    fee: _gig.fee,
+                                    organizer: _gig.organizer,
+                                    notes: _gig.notes,
+                                    setlists: _gig.setlists.map((s) => s.id == setlist.id ? updated : s).toList(),
+                                  );
+                                });
+                                _save();
+                                Navigator.of(context).pop();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: const Text('Save'),
                             ),
-                            child: const Text('Save'),
+                          ],
+                        ),
+                      );
+                    },
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            final setIndex = _gig.setlists.indexOf(setlist);
+                            Navigator.of(context, rootNavigator: true).push(
+                              MaterialPageRoute(
+                                builder: (context) => LiveScreen(
+                                  sets: _gig.setlists,
+                                  bandId: widget.bandId,
+                                  initialSetIndex: setIndex,
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.play_arrow, size: 16),
+                          label: const Text('Live'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        final setIndex = _gig.setlists.indexOf(setlist);
-                        Navigator.of(context, rootNavigator: true).push(
-                          MaterialPageRoute(
-                            builder: (context) => LiveScreen(
-                              sets: _gig.setlists,
-                              bandId: widget.bandId,
-                              initialSetIndex: setIndex,
-                            ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                          onPressed: () {
+                            setState(() {
+                              _gig = Gig(
+                                id: _gig.id,
+                                name: _gig.name,
+                                venue: _gig.venue,
+                                date: _gig.date,
+                                time: _gig.time,
+                                soundcheckTime: _gig.soundcheckTime,
+                                setting: _gig.setting,
+                                fee: _gig.fee,
+                                organizer: _gig.organizer,
+                                notes: _gig.notes,
+                                setlists: _gig.setlists.where((s) => s.id != setlist.id).toList(),
+                              );
+                            });
+                            _save();
+                          },
+                        ),
+                        const SizedBox(width: 4),
+                        ReorderableDragStartListener(
+                          index: i,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(Icons.drag_handle, color: AppTheme.textMuted),
                           ),
-                        );
-                      },
-                      icon: const Icon(Icons.play_arrow, size: 16),
-                      label: const Text('Live'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      ),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                      onPressed: () {
-                        setState(() {
-                          _gig = Gig(
-                            id: _gig.id,
-                            name: _gig.name,
-                            venue: _gig.venue,
-                            date: _gig.date,
-                            time: _gig.time,
-                            soundcheckTime: _gig.soundcheckTime,
-                            setting: _gig.setting,
-                            fee: _gig.fee,
-                            organizer: _gig.organizer,
-                            notes: _gig.notes,
-                            setlists: _gig.setlists.where((s) => s.id != setlist.id).toList(),
-                          );
-                        });
-                        _save();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );

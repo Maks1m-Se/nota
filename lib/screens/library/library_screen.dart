@@ -20,6 +20,23 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   SongSortOrder _sortOrder = SongSortOrder.titleAZ;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Song> _filterSongs(List<Song> songs) {
+    if (_searchQuery.trim().isEmpty) return songs;
+    final q = _searchQuery.trim().toLowerCase();
+    return songs.where((s) =>
+      s.title.toLowerCase().contains(q) ||
+      s.artist.toLowerCase().contains(q)
+    ).toList();
+  }
 
   List<Song> _sortedSongs(List<Song> songs) {
     final sorted = List<Song>.from(songs);
@@ -54,7 +71,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final songs = context.watch<BandProvider>().getSongs(widget.bandId);
-    final sorted = _sortedSongs(songs);
+    final filtered = _filterSongs(songs);
+    final sorted = _sortedSongs(filtered);
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -72,7 +90,37 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
       body: Column(
         children: [
-          // Sort bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: AppTheme.surfaceColor,
+            child: TextField(
+              controller: _searchController,
+              style: const TextStyle(color: AppTheme.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Search songs...',
+                hintStyle: const TextStyle(color: AppTheme.textMuted),
+                prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: AppTheme.textMuted, size: 20),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: AppTheme.backgroundColor,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: AppTheme.surfaceColor,
@@ -106,19 +154,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  '${sorted.length} Songs',
+                  _searchQuery.isNotEmpty
+                      ? '${sorted.length} / ${songs.length} Songs'
+                      : '${sorted.length} Songs',
                   style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
                 ),
               ],
             ),
           ),
-          // Song list
           Expanded(
             child: sorted.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
-                      'No songs yet. Tap + to add one.',
-                      style: TextStyle(color: AppTheme.textMuted),
+                      _searchQuery.isNotEmpty
+                          ? 'No songs match "$_searchQuery"'
+                          : 'No songs yet. Tap + to add one.',
+                      style: const TextStyle(color: AppTheme.textMuted),
                     ),
                   )
                 : ListView.builder(
@@ -129,46 +180,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          title: Text(
-                            song.title,
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          subtitle: Text(
-                            song.artist,
-                            style: const TextStyle(color: AppTheme.textSecondary),
-                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          title: Text(song.title, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
+                          subtitle: Text(song.artist, style: const TextStyle(color: AppTheme.textSecondary)),
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: AppTheme.primaryColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.4),
-                              ),
+                              border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
                             ),
-                            child: Text(
-                              song.key,
-                              style: const TextStyle(
-                                color: AppTheme.primaryColor,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                            child: Text(song.key, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.w500)),
                           ),
                           onTap: () {
                             Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
-                                builder: (context) => SongDetailScreen(
-                                  song: song,
-                                  bandId: widget.bandId,
-                                ),
+                                builder: (context) => SongDetailScreen(song: song, bandId: widget.bandId),
                               ),
                             );
                           },
@@ -186,10 +213,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                       Navigator.of(context).pop();
                                       showDialog(
                                         context: context,
-                                        builder: (context) => EditSongDialog(
-                                          song: song,
-                                          bandId: widget.bandId,
-                                        ),
+                                        builder: (context) => EditSongDialog(song: song, bandId: widget.bandId),
                                       );
                                     },
                                   ),
@@ -214,10 +238,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                                 context.read<BandProvider>().deleteSong(widget.bandId, song.id);
                                                 Navigator.of(context).pop();
                                               },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                foregroundColor: Colors.white,
-                                              ),
+                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
                                               child: const Text('Delete'),
                                             ),
                                           ],

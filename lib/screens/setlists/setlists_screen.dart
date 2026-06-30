@@ -138,6 +138,17 @@ class SetlistsScreen extends StatelessWidget {
                               },
                             ),
                             ListTile(
+                              leading: const Icon(Icons.copy, color: AppTheme.textSecondary),
+                              title: const Text(
+                                'Duplicate',
+                                style: TextStyle(color: AppTheme.textPrimary),
+                              ),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                context.read<BandProvider>().duplicateSetlist(bandId, setlist);
+                              },
+                            ),
+                            ListTile(
                               leading: const Icon(Icons.delete, color: Colors.red),
                               title: const Text(
                                 'Delete',

@@ -7,6 +7,7 @@ import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import '../live/live_screen.dart';
 import '../library/song_detail_screen.dart';
+import '../library/edit_song_dialog.dart';
 
 class SetlistDetailScreen extends StatefulWidget {
   final Setlist setlist;
@@ -186,6 +187,7 @@ class _SetlistDetailScreenState extends State<SetlistDetailScreen> {
             )
           : ReorderableListView.builder(
               padding: const EdgeInsets.all(16),
+              buildDefaultDragHandles: false,
               itemCount: songs.length,
               onReorder: (oldIndex, newIndex) {
                 setState(() {
@@ -235,8 +237,7 @@ class _SetlistDetailScreenState extends State<SetlistDetailScreen> {
                       style: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     onTap: () {
-                      Navigator.push(
-                        context,
+                      Navigator.of(context, rootNavigator: true).push(
                         MaterialPageRoute(
                           builder: (context) => SongDetailScreen(
                             song: song,
@@ -257,13 +258,11 @@ class _SetlistDetailScreenState extends State<SetlistDetailScreen> {
                               title: const Text('Edit Song', style: TextStyle(color: AppTheme.textPrimary)),
                               onTap: () {
                                 Navigator.of(context).pop();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SongDetailScreen(
-                                      song: song,
-                                      bandId: widget.bandId,
-                                    ),
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => EditSongDialog(
+                                    song: song,
+                                    bandId: widget.bandId,
                                   ),
                                 );
                               },
@@ -303,11 +302,19 @@ class _SetlistDetailScreenState extends State<SetlistDetailScreen> {
                               ),
                             ),
                           ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 4),
                         IconButton(
                           icon: const Icon(Icons.remove_circle_outline,
                               color: Colors.red, size: 20),
                           onPressed: () => _removeSong(index),
+                        ),
+                        const SizedBox(width: 4),
+                        ReorderableDragStartListener(
+                          index: index,
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 4),
+                            child: Icon(Icons.drag_handle, color: AppTheme.textMuted),
+                          ),
                         ),
                       ],
                     ),

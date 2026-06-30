@@ -1,30 +1,40 @@
 # Nota – Backlog
 
-**Letzter Stand:** 06.05.2026
+**Letzter Stand:** [heutiges Datum eintragen]
 
 ## Aktuell in Arbeit
 
-*Nichts. Letztes abgeschlossenes Feature: Set-Übergang im Live-Modus mit Pause-Screen.*
+*Pre-Gig-Sprint abgeschlossen und committed. Offene Architekturfrage: Gig-Setlisten Referenz vs. Snapshot (siehe unten).*
 
-**Nächster Schritt:** Long-Press-Bug in Setlist/Gig fixen, dann weitere Pre-Gig-Items.
+**Nächster Schritt:** User hat 1–2 neue HOCH-Punkte (noch nicht spezifiziert) für nächste Session.
 
-**Termine:** Erste echte Live-Nutzung am 09.05.2026 und 10.05.2026.
+**Termine:** Gigs am 09.05. + 10.05.2026.
 
-## Prio HOCH (vor Gigs am 09./10.05.)
+## ⚠ Offene Architektur-Entscheidung (BLOCKER für Gig-Setlist-Bearbeitung)
 
-- [ ] Long-Press in Setlist/Gig öffnet Canvas statt Edit-Dialog
-- [ ] Canvas Vollbild konsistent: aus Setlist/Gig öffnet aktuell mit Sidebar, sollte wie Library Vollbild sein
-- [ ] Drag & Drop: Setlists innerhalb Gig + Songs innerhalb Gig-Setlist verschieben
-- [ ] Suche in Library
+**Gig-Setlisten: Referenz oder Snapshot?**
+- Aktueller Ist-Zustand: Setlisten in Gigs teilen die ID mit der Standalone-Setliste → sie sind effektiv **dieselbe** Setliste (Referenz).
+- Symptom: „Gig → Setliste → + Song" fügt den Song auch in der Standalone-Version hinzu (gleiche ID, eine Quelle).
+- `updateSetlist` wurde erweitert, sodass es Setlisten sowohl in der globalen Liste als auch in Gigs per ID aktualisiert. Funktioniert technisch, aber das Verhalten (shared) ist nicht bewusst entschieden.
+- **Zu entscheiden:**
+  - **Option 1 (Referenz/shared):** Eine Quelle der Wahrheit. Änderung wirkt überall. Einfacher.
+  - **Option 2 (Snapshot/Kopie):** Jeder Gig hat eigene Setlist-Version mit eigener ID. Flexibler für Bühne, mehr Code.
+- ⚠ Datenformat-Entscheidung → doppelt nachfragen, Backup vor Umsetzung.
+
+## Prio HOCH
+
+- [ ] **1–2 neue Punkte vom User** (in nächster Session spezifizieren)
 - [ ] Mehrere Songs/Setlists gleichzeitig hinzufügen
-- [ ] Duplizieren von Songs/Setlists/Gigs
+- [ ] Duplizieren von Songs/Gigs (Setlist-Duplikat ist erledigt)
 - [ ] Gig Kartenlayout überarbeiten
+- [ ] Setlists-Screen Sortierung (Parität mit Library)
+- [ ] Library Alphabet-Quick-Nav-Leiste (vertikal, bei alphabetischer + Key-Sortierung)
 
 ## Prio MITTEL
 
 - [ ] Live-Modus-Indikator (Konzept nach erstem Gig)
-- [ ] To-Practice-Feature (User-Wunsch hoch, aber nicht Gig-kritisch)
-- [ ] Setlist Template System
+- [ ] To-Practice-Feature (User-Wunsch hoch, nach Gig priorisieren)
+- [ ] Setlist Template System (teilweise durch Duplicate abgedeckt)
 - [ ] Gig Recap (Sterne, Highlights/Lowlights)
 - [ ] Abbreviation-Vorschläge automatisch
 - [ ] Gig Live Notes
@@ -46,43 +56,37 @@
 ## Offene Fragen
 
 - Standard-Modus persistent speichern? (User wollte erst Erfahrung sammeln)
-- Canvas-Sidebar Refactoring auf relative Koordinaten – tatsächlich nötig im Alltag?
 - Auto-Sync Nextcloud: bei jedem Save? Nur beim App-Verlassen?
 - Multiple Sketch-Pages: Tabs? Swipe? UI noch unklar
-- Band Theming aus Logo: welche Farben extrahieren? Primary, Accent?
-- Gig Recap Timing: sofort nach Gig oder optional? Pflichtfelder?
-- PDF-Auflösung 2x – reicht das auf der Bühne? Im Alltag noch nicht getestet
-- Live-Modus-Indikator: welche Form (am Rand, AppBar-Färbung, kleiner Punkt)?
+- Band Theming aus Logo: welche Farben extrahieren?
+- Gig Recap Timing: sofort nach Gig oder optional?
+- PDF-Auflösung 2x – reicht das auf der Bühne? Noch nicht im Bühnenlicht getestet
+- Live-Modus-Indikator: welche Form?
 
 ## Erledigt (chronologisch absteigend)
 
-**2026 (bis Mai):**
-- Set-Übergang im Live-Modus: Pause-Screen mit "PAUSE" + nächstem Set + nächstem Song, Swipe weiter, Sidebar-Headers pro Set, Next-Hint zeigt "Pause" am Set-Ende
-- PDF im Live-Modus sichtbar (Properties wurden nicht durchgereicht)
-- PDF-Lag beim Verschieben/Skalieren behoben (Save erst onScaleEnd statt 60×/s)
-- Chord Chart PDF Import als Hintergrund mit Verschieben/Skalieren
-- Live-Modus aus Gig spielt korrekt nur Setlist-Songs
-- Setting als Freitext (statt isOutdoor Boolean)
-- Backwards-Compat-Migration für alte Backups
-- Tab-Stop-Layout im Live-Modus
-- 3 Live-Modi (Fullscreen / WithSidebar / SetlistOnly)
-- Solo/Backing Badges
-- Nextcloud WebDAV Backup/Restore (manuell)
+**2026 (Mai, Pre-Gig-Sprint):**
+- Library-Suche (Filter title + artist, Live, mit Counter X/Y und Clear-Button)
+- Setlist Duplicate (Setlists-Screen, Long-Press → „(Copy)")
+- Rename-Bug-Fix (Provider vor await/pop, disposed-Context vermieden)
+- Long-Press in Setlist/Gig öffnet Edit-Dialog statt Canvas
+- Canvas-Vollbild konsistent aus Setlist/Gig (rootNavigator)
+- Drag & Drop: Songs innerhalb Setlist + Setlists innerhalb Gig (Drag-Handle, Reihenfolge Key→Remove→Drag)
+- Live-Modus Empty-State-Guard (kein Crash mehr bei leerer Setliste)
+- updateSetlist erweitert: aktualisiert Setlisten auch in Gigs per ID
+- Set-Übergang im Live-Modus: Pause-Screen, Swipe weiter, Sidebar-Headers, Next-Hint zeigt „Pause"
+- PDF im Live-Modus sichtbar
+- PDF-Lag beim Verschieben/Skalieren behoben (Save onScaleEnd statt 60×/s)
 
 **Davor:**
-- Vollständiges Songs CRUD inkl. Edit-Dialog (Long Press)
-- Gigs CRUD mit Setlist-Zuordnung, Long Press Rename
-- Setlists CRUD mit Drag & Drop
-- Canvas-System: Polygon-Striche, velocity-basiert, Glättung
-- Tools: Pen, Highlighter (saveLayer transparent), Vektor-Eraser
-- 8 Hintergründe (Dark/Light × Plain/Lined/Grid/Staff)
-- Custom Color Picker, Breiten-Presets + Long-Press Slider
-- Zoom mit zwei Fingern, Linie-zwischen-Fingern-Bug behoben
-- S Pen Support: Kurz=Undo, Halten=Eraser, Doppelklick=Stift↔Marker
-- Swipe-Navigation Live-Modus, Next-Song-Hinweis
-- Immersive Mode global, Landscape-Lock
+- Chord Chart PDF Import als Hintergrund mit Verschieben/Skalieren
+- Live-Modus aus Gig spielt korrekt nur Setlist-Songs
+- Setting als Freitext, Backwards-Compat-Migration
+- Tab-Stop-Layout, 3 Live-Modi, Solo/Backing Badges
+- Nextcloud WebDAV Backup/Restore (manuell)
+- Songs/Gigs/Setlists CRUD, Canvas-System, S Pen Support
 
 ## Termine / Pflege-Notizen
 
 - Vor jedem Gig: Backup auf Nextcloud (manuell)
-- Bei Datenformat-Änderung im Modell: 4 Stellen prüfen (Modell, Provider `_load`, Provider `_save`, alle UI-Stellen mit neuem Song-Objekt)
+- Bei Datenformat-Änderung: 4 Stellen prüfen (Modell, `_load`, `_save`, alle UI-Stellen)

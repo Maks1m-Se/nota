@@ -51,6 +51,12 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 - Fix: lokaler State während Drag, Persistierung erst auf `onScaleEnd`
 - Pattern für künftige Drag/Skalier-Operationen: niemals jeden Frame persistieren
 
+**Gig-Setlisten sind aktuell Referenzen (shared ID) — Entscheidung offen**
+- Setlisten in Gigs teilen die ID mit der Standalone-Setliste
+- `updateSetlist` aktualisiert daher beide (global + in allen Gigs per ID)
+- Konsequenz: Song-Add/Reorder in Gig-Setliste wirkt auch auf Standalone-Version
+- Noch nicht bewusst entschieden ob Referenz (shared) oder Snapshot (Kopie pro Gig) gewünscht ist → siehe Backlog-Blocker
+
 ## UX-/Design-Entscheidungen
 
 **Live-Modus Standard = WithSidebar**
@@ -171,6 +177,15 @@ g['setting'] ?? (g['isOutdoor'] == true ? 'Outdoor' : '')
 - Bei 200 Punkten = 200 Kopien beim 200. Punkt
 - Symptome: verspätete Striche, Kurven werden zu Polylinien (Punkt-Drops durch Frame-Skip)
 - Fix verschoben: Backlog MITTEL "Canvas-Performance: Strich-Cloning O(n²) → mutable Append"
+
+**Live-Modus Empty-State**
+- `_items`-Liste leer (Setliste ohne Songs) führte zu RangeError bei `_items[0]`
+- Fix: `_currentItem` nullable gemacht, `_buildMainContent` fängt `_items.isEmpty` mit Empty-State ab
+- `_appBarTitle` gibt bei null „Live" zurück
+
+**updateSetlist muss Gigs mitführen**
+- Setliste nur in globaler Liste zu aktualisieren reicht nicht, wenn sie in einem Gig bearbeitet wird
+- `updateSetlist` durchsucht jetzt auch `_gigs[bandId]` und ersetzt per ID
 
 ## Implizites Wissen / Konventionen
 

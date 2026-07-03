@@ -3,7 +3,7 @@
 **Projekt:** Nota
 **Repo:** github.com/Maks1m-Se/nota
 **Lokal:** `C:\Git\nota`
-**Letzter Stand:** 30.06.2026
+**Letzter Stand:** 03.07.2026
 
 ## Was ist Nota
 
@@ -34,7 +34,7 @@ Flutter-basierte Setlist-Management-App für aktive Musiker. Optimiert für Tabl
 **Datenhierarchie:**
 Bands → Songs / Setlists / Gigs (mit SongSlots für Reihenfolge)
 
-**Persistenz:** Alle Daten als ein einziges JSON-Blob in SharedPreferences. Chord Charts als Base64 im JSON.
+**Persistenz:** Alle Daten als ein einziges JSON-Blob in SharedPreferences. Chord Charts als Base64 im JSON. Stroke-Save ist debounced (`_scheduleStrokeSave`, 800ms) + Lifecycle-Flush (`flushPendingSave` in `app.dart`); alle anderen Saves sofort.
 
 **File-Struktur:**
 ```
@@ -60,6 +60,9 @@ flutter run -d R52NC05R33J
 ```bash
 git add . && git commit -m "..." && git push
 ```
+
+**Implementierung via Claude Code:** Multi-File-Features werden mit Claude Code gebaut (CLI, editiert Repo direkt). Guardrails in `CLAUDE.md` (Repo-Root). Dieser Chat bleibt für Sparring/Architektur.
+
 
 ## Daten / Backup
 
@@ -104,9 +107,9 @@ git add . && git commit -m "..." && git push
 - Doppelklick: Stift ↔ Marker
 - Bewusst nur außerhalb Live aktiv (Bühne = nur Finger)
 
-## Chat-Architektur im Claude-Projekt
+## Chat-Architektur
 
-Phasen-Modell, abhängig vom tatsächlichen Dispatch-Bedarf.
+Phase 1: ein Chat `Nota` für alles (Code, Bugs, Priorisierung, Architektur). Kein Hub. Details in den Projekt-Anweisungen. Hub erst bei neuen Disziplinen (z.B. Design).
 
 ### Phase 1 (aktuell): Ein Chat für alles
 

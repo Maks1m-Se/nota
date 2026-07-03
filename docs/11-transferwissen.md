@@ -57,6 +57,13 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 - Konsequenz: Song-Add/Reorder in Gig-Setliste wirkt auch auf Standalone-Version
 - Noch nicht bewusst entschieden ob Referenz (shared) oder Snapshot (Kopie pro Gig) gewünscht ist → siehe Backlog-Blocker
 
+**Stroke-Save debounced (statt sofort)**
+- Problem: `_save()` serialisierte den ganzen JSON-Blob inkl. aller base64 Chord-Charts synchron bei jedem Pen-Up/Erase → Main-Isolate blockiert → Pointer-Events gedroppt (Striche erschienen als gerade Linie + 1-2s Lag).
+- Verifikation: `_save()` in `updateSongStrokes` temporär auskommentiert → Lag komplett weg = Save als alleiniger Täter.
+- Fix: nur `updateSongStrokes` debounced (`_scheduleStrokeSave`, 800ms, Timer resettet pro Aufruf). In-Memory-Update + `notifyListeners` bleiben sofortig. Alle anderen Mutationen sofort → strukturelle Daten immer durable, kleinste Verlust-Fläche.
+- `flushPendingSave` via `WidgetsBindingObserver` in `app.dart` (`.value`-Provider) bei pause/inactive/detached → schließt Verlust-Fenster bis auf Hard-Kill <800ms.
+- Rest-Lag bleibt (A≈B über leere/volle Songs): periodische Save-Spikes, voller Encode pro Fire → als Backlog geparkt. NICHT Rendering (widerlegt durch A≈B).
+
 ## UX-/Design-Entscheidungen
 
 **Live-Modus Standard = WithSidebar**
@@ -256,3 +263,10 @@ Häufige Fehlerquelle: eine der vier Stellen vergessen.
 - Bühne: nur Finger-Bedienung, S Pen für Probe/Pausen
 - Sekundäre Doku: Obsidian Vault
 - Pi/Nextcloud: Eigenleistung, hohe emotionale Investition
+
+## Tooling
+
+**Claude Code für Implementierung (ab Juli 2026)**
+- Multi-File-Features über Claude Code (CLI, editiert Repo direkt) statt Copy-paste im Chat — Grund: Copy-paste-Fehler waren wiederholt teuer.
+- Sparring/Architektur/Priorisierung bleiben im `Nota`-Chat.
+- Guardrails: `CLAUDE.md` im Repo-Root.

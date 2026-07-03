@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,8 +18,17 @@ class BandProvider extends ChangeNotifier {
   Map<String, List<Setlist>> _setlists = {};
   Map<String, List<Gig>> _gigs = {};
 
+  // Debounce nur für den heißen Stroke-Save-Pfad
+  Timer? _strokeSaveDebounce;
+
   BandProvider() {
     _load();
+  }
+
+  @override
+  void dispose() {
+    _strokeSaveDebounce?.cancel();
+    super.dispose();
   }
 
   // Getters
@@ -135,8 +145,28 @@ class BandProvider extends ChangeNotifier {
     _gigs = {'1': [], '2': [], '3': []};
   }
 
+  // Stroke-Save debounced: schreibt erst ~800ms nach dem letzten Pen-Up/Erase.
+  // Timer resettet pro Aufruf → nie während aktivem Zeichnen, nur in der Pause.
+  void _scheduleStrokeSave() {
+    _strokeSaveDebounce?.cancel();
+    _strokeSaveDebounce = Timer(const Duration(milliseconds: 800), () {
+      _strokeSaveDebounce = null;
+      _save();
+    });
+  }
+
+  // Sofort-Flush für App-Lifecycle (pause/inactive/detached).
+  Future<void> flushPendingSave() async {
+    if (_strokeSaveDebounce != null) {
+      await _save(); // _save cancelt + nullt den Timer selbst
+    }
+  }
+
   // Save
   Future<void> _save() async {
+    // Jeder Save befriedigt pending Strokes (bereits in-memory) → Timer clearen.
+    _strokeSaveDebounce?.cancel();
+    _strokeSaveDebounce = null;
     final prefs = await SharedPreferences.getInstance();
     final data = {
       'bands': _bands.map((b) => {
@@ -218,7 +248,7 @@ class BandProvider extends ChangeNotifier {
   }
 
   void addSong(String bandId, Song song) {
-    _songs[bandId] ??= [];
+    _songs[bandId] ??= [];  
     _songs[bandId]!.add(song);
     _save();
     debugPrint('Saved song: ${song.title}');
@@ -246,7 +276,7 @@ class BandProvider extends ChangeNotifier {
       } else {
         list[index].strokes = strokes;
       }
-      _save();
+      _scheduleStrokeSave(); // debounced statt sofort — behebt den Save-Freeze
       notifyListeners();
     }
   }

@@ -177,20 +177,48 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     itemCount: sorted.length,
                     itemBuilder: (context, index) {
                       final song = sorted[index];
+                      final practiceCount = context
+                          .watch<BandProvider>()
+                          .openPracticeCountForSong(widget.bandId, song.id);
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           title: Text(song.title, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
                           subtitle: Text(song.artist, style: const TextStyle(color: AppTheme.textSecondary)),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
-                            ),
-                            child: Text(song.key, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.w500)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // To-Practice Badge (Amber): Count offener Items
+                              if (practiceCount > 0) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.practiceColor.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: AppTheme.practiceColor.withValues(alpha: 0.4)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.fitness_center, color: AppTheme.practiceColor, size: 12),
+                                      const SizedBox(width: 4),
+                                      Text('$practiceCount', style: const TextStyle(color: AppTheme.practiceColor, fontSize: 13, fontWeight: FontWeight.w500)),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
+                                ),
+                                child: Text(song.key, style: const TextStyle(color: AppTheme.primaryColor, fontSize: 13, fontWeight: FontWeight.w500)),
+                              ),
+                            ],
                           ),
                           onTap: () {
                             Navigator.of(context, rootNavigator: true).push(

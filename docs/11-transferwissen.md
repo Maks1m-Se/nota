@@ -64,6 +64,16 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 - `flushPendingSave` via `WidgetsBindingObserver` in `app.dart` (`.value`-Provider) bei pause/inactive/detached → schließt Verlust-Fenster bis auf Hard-Kill <800ms.
 - Rest-Lag bleibt (A≈B über leere/volle Songs): periodische Save-Spikes, voller Encode pro Fire → als Backlog geparkt. NICHT Rendering (widerlegt durch A≈B).
 
+**Backwards-compatible Load bei neuem Blob-Key**
+- Neuer Top-Level-Key (`practiceItems`) additiv in den JSON-Blob. Alte Backups ohne Key: `as Map? ?? {}` → kein Crash.
+- Zusätzlich inneres try-catch NUR um den neuen Block: ein defektes Practice-Item leert schlimmstenfalls die Practice-Liste, reißt aber nie Songs/Setlists/Gigs in `_loadDefaults`. Muster für künftige additive Modell-Erweiterungen.
+
+**To-Practice: Done-Verhalten zwei-achsig**
+- Häkchen (erledigt, reversibel, eingeklappte Sektion) ≠ Prio-Cycle (geübt-aber-weiter-dran). Bewusst getrennt statt ein überladener „Practiced"-Button — jede Aktion tut genau eine Sache.
+
+**Orphan-Handling Practice-Items: mit-löschen**
+- `deleteSong` löscht die Practice-Items des Songs mit. Entscheidung gegen „zu Allgemein umhängen" (würde song-lose Karteileichen erzeugen).
+
 ## UX-/Design-Entscheidungen
 
 **Live-Modus Standard = WithSidebar**
@@ -223,6 +233,8 @@ Häufige Fehlerquelle: eine der vier Stellen vergessen.
 - Während Drag: nur lokaler State (Live-Visualisierung)
 - Beim Loslassen: einmal Callback → einmal `updateSong` → einmal `_save`
 - Gilt für jede Operation, die kontinuierliche Inputs erzeugt und teure Persistenz hat
+
+**Amber (`AppTheme.practiceColor`, #FFC107)** = Practice-Feature durchgängig (Badges, Icons, Selektoren). Abgegrenzt von Solo-Rot, Backing-Blau, Key-Lila. Neue Practice-UI nutzt diese Konstante, kein hartkodiertes Amber.
 
 ## Persönliche Präferenzen / Stil
 

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/band.dart';
+import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import '../library/library_screen.dart';
 import '../setlists/setlists_screen.dart';
 import '../gigs/gigs_screen.dart';
+import '../practice/practice_screen.dart';
 
 class BandScaffold extends StatefulWidget {
   final Band band;
@@ -24,6 +27,7 @@ class _BandScaffoldState extends State<BandScaffold> {
     _NavItem(icon: Icons.library_music, label: 'Library'),
     _NavItem(icon: Icons.list, label: 'Setlists'),
     _NavItem(icon: Icons.calendar_today, label: 'Gigs'),
+    _NavItem(icon: Icons.fitness_center, label: 'Practice'),
   ];
 
   void _onNavTap(int index) {
@@ -43,6 +47,8 @@ class _BandScaffoldState extends State<BandScaffold> {
         return SetlistsScreen(bandId: widget.band.id);
       case 2:
         return GigsScreen(bandId: widget.band.id);
+      case 3:
+        return PracticeScreen(bandId: widget.band.id);
       default:
         return LibraryScreen(bandId: widget.band.id);
     }
@@ -50,6 +56,8 @@ class _BandScaffoldState extends State<BandScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final practiceBadgeCount =
+        context.watch<BandProvider>().openPracticeCount(widget.band.id);
     return Scaffold(
       body: Row(
         children: [
@@ -64,6 +72,7 @@ class _BandScaffoldState extends State<BandScaffold> {
                     selectedIndex: _selectedIndex,
                     onItemTap: _onNavTap,
                     onClose: () => setState(() => _sidebarOpen = false),
+                    practiceBadgeCount: practiceBadgeCount,
                   )
                 : const SizedBox.shrink(),
           ),
@@ -123,6 +132,7 @@ class _Sidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemTap;
   final VoidCallback onClose;
+  final int practiceBadgeCount;
 
   const _Sidebar({
     required this.band,
@@ -130,6 +140,7 @@ class _Sidebar extends StatelessWidget {
     required this.selectedIndex,
     required this.onItemTap,
     required this.onClose,
+    this.practiceBadgeCount = 0,
   });
 
   @override
@@ -216,6 +227,29 @@ class _Sidebar extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
+                    // To-Practice Badge (Amber): Count offener Items
+                    if (item.label == 'Practice' && practiceBadgeCount > 0) ...[
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: AppTheme.practiceColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: AppTheme.practiceColor
+                                  .withValues(alpha: 0.4)),
+                        ),
+                        child: Text(
+                          '$practiceBadgeCount',
+                          style: const TextStyle(
+                            color: AppTheme.practiceColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

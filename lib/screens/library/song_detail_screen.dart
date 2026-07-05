@@ -7,6 +7,8 @@ import '../../theme/app_theme.dart';
 import '../../widgets/drawing_canvas.dart';
 import '../../widgets/drawing_toolbar.dart';
 import '../live/live_screen.dart';
+import '../practice/add_practice_item_dialog.dart';
+import '../../models/practice_item.dart';
 import '../../models/setlist.dart';
 import '../../models/song_slot.dart';
 import 'dart:convert';
@@ -220,6 +222,23 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
             _MetaBadge(label: 'B', color: Colors.blue),
           ],
           const SizedBox(width: 8),
+          // To-Practice Capture (Song fest gebunden)
+          IconButton(
+            icon: const Icon(Icons.fitness_center, color: AppTheme.practiceColor),
+            tooltip: 'To Practice',
+            onPressed: () async {
+              final item = await showDialog<PracticeItem>(
+                context: context,
+                builder: (context) => AddPracticeItemDialog(
+                  bandId: widget.bandId,
+                  fixedSongId: song.id,
+                ),
+              );
+              if (item != null && context.mounted) {
+                context.read<BandProvider>().addPracticeItem(widget.bandId, item);
+              }
+            },
+          ),
           // Toggle Metadaten
           IconButton(
             icon: Icon(

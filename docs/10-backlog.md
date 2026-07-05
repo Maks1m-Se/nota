@@ -1,10 +1,10 @@
 # Nota – Backlog
 
-**Letzter Stand:** 03.07.2026
+**Letzter Stand:** 05.07.2026
 
 ## Aktuell in Arbeit
 
-**To-Practice Feature** – Konzept locked (siehe unten), Bau via Claude Code.
+*Nichts. Letztes Feature: To-Practice (komplett, via Claude Code).*
 
 ## ⚠ Offene Architektur-Entscheidung (BLOCKER für Gig-Setlist-Bearbeitung)
 
@@ -33,6 +33,9 @@
 - [ ] Gig Live Notes
 - [ ] Canvas-Performance: Strich-Cloning O(n²) → mutable Append (verspätete Striche / gerade Linien bei langem Schreiben)
 - [ ] Canvas Rest-Lag: periodische Save-Spikes — jeder Debounce-Save encodet den vollen Blob (base64-Charts dominieren) synchron. Fix: Chart-Base64 cachen / Encode off-isolate. Null Daten-Risiko.
+- [ ] `quickStrokes`-Feld (Song-Model): ungenutzt. Entscheidung nutzen/entfernen offen.
+- [ ] Cross-Band Practice-Startscreen: `allPracticeItems`-Getter liegt bereit, UI ausstehend.
+- [ ] Backlog HOCH verifizieren: „Mehrere Songs/Setlists hinzufügen" + „Gig-Kartenlayout" gegen App-Stand prüfen.
 
 ## Prio NIEDRIG
 
@@ -62,6 +65,7 @@
 **2026 (Juli):**
 - Canvas-Save-Debounce: Stroke-Save aus dem Hot-Path (800ms + Lifecycle-Flush) → Zeichen-Lag massiv reduziert. Diagnose: `_save()` auskommentiert → Lag weg = Save als Täter bestätigt.
 - Pre-Gig-Sprint: Library-Suche, Duplizieren (Songs/Setlists/Gigs), Drag&Drop (echt — war vorher fälschlich als erledigt geführt), Edit-Dialog, Vollbild-Fix, Live-Empty-Guard
+- To-Practice Feature (via Claude Code, 4 Phasen): PracticeItem-Model, band-scoped Provider-Layer (backwards-compatible Load + inneres try-catch), Capture-Dialog (2 Entry-Points), Practice-Screen (Prio-Sort, Prio-Cycle, Erledigt-Sektion, Filter, Swipe-Delete), Amber-Badges (Library + Nav), Orphan-Delete (Items sterben mit dem Song).
 
 **2026 (Mai, Pre-Gig-Sprint):**
 - Library-Suche (Filter title + artist, Live, mit Counter X/Y und Clear-Button)
@@ -88,13 +92,3 @@
 
 - Vor jedem Gig: Backup auf Nextcloud (manuell)
 - Bei Datenformat-Änderung: 4 Stellen prüfen (Modell, `_load`, `_save`, alle UI-Stellen)
-
-## To-Practice – Konzept (locked, Bau ausstehend)
-
-- Item: `PracticeItem { id, text, songId?, priority, done, createdAt }`, band-scoped im BandProvider + Cross-Band-Getter (trägt späteren band-übergreifenden Startscreen).
-- Capture: Text-Dialog, aus Song-AppBar (Song-Bindung auto) + aus Practice-Tab (Song-Dropdown, auch song-lose Items).
-- Prio: 3 Stufen H/M/N, Default Mittel, in Liste per Tap cyclebar.
-- Review: eigenes „Practice"-Nav-Item, flache Liste, Default-Sort Prio absteigend; Song-Gruppierung + Filter (Song/Prio/Hinzugefügt) als Layer.
-- Done: Häkchen → eingeklappte „Erledigt"-Sektion (reversibel); Prio-Cycle = geübt-aber-weiter-dran; Swipe = löschen. Zwei Achsen getrennt.
-- Badges (Amber): Count offener Items in Library-Songzeile + Practice-Nav (+ optional Song-AppBar).
-- Offen beim Bau: Orphan-Handling bei Song-Löschung. Separat: ungenutztes `quickStrokes`-Feld (nutzen/entfernen).

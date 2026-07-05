@@ -3,7 +3,7 @@
 **Projekt:** Nota
 **Repo:** github.com/Maks1m-Se/nota
 **Lokal:** `C:\Git\nota`
-**Letzter Stand:** 03.07.2026
+**Letzter Stand:** 05.07.2026
 
 ## Was ist Nota
 
@@ -35,6 +35,7 @@ Flutter-basierte Setlist-Management-App für aktive Musiker. Optimiert für Tabl
 Bands → Songs / Setlists / Gigs (mit SongSlots für Reihenfolge)
 
 **Persistenz:** Alle Daten als ein einziges JSON-Blob in SharedPreferences. Chord Charts als Base64 im JSON. Stroke-Save ist debounced (`_scheduleStrokeSave`, 800ms) + Lifecycle-Flush (`flushPendingSave` in `app.dart`); alle anderen Saves sofort.
+`practiceItems` (band-scoped) als vierter Top-Level-Key im JSON-Blob. Backwards-compatible: alte Backups ohne den Key laufen (`as Map? ?? {}`), inneres try-catch schützt Songs/Setlists/Gigs vor Practice-Parse-Fehlern.
 
 **File-Struktur:**
 ```
@@ -44,6 +45,8 @@ lib/
 ├── screens/       – pro Feature ein Ordner (bands, library, setlists, gigs, live, settings)
 └── widgets/       – wiederverwendbare Widgets (drawing_canvas, drawing_toolbar)
 ```
+
+- **Practice:** Übungsliste pro Band. Items (Text, optional song-gebunden, Prio H/M/N, erledigt). Capture aus Song-AppBar (vorbelegt) + Practice-FAB (Dropdown). Prio-Sort, Erledigt-Sektion, Filter, Swipe-Delete. Amber-Badges in Library + Nav. Model: `lib/models/practice_item.dart`, Screen: `lib/screens/practice/`.
 
 ## Setup / Deployment
 
@@ -121,7 +124,7 @@ Ein Chat `Nota` deckt Code, Bugs, Refactoring, Priorisierung und Architektur-Ent
 - Scope-Disziplin pro Arbeitssequenz (ein Feature, ein Bug, eine Priorisierung)
 - Bei ~150 Nachrichten Session-Ende einleiten und neuen Chat starten
 - Knowledge-Updates am Ende jeder inhaltlich wichtigen Session
-
+- **Practice:** Übungsliste pro Band. Items (Text, optional song-gebunden, Prio H/M/N, erledigt). Capture aus Song-AppBar (vorbelegt) + Practice-FAB (Dropdown). Prio-Sort, Erledigt-Sektion, Filter, Swipe-Delete. Amber-Badges in Library + Nav. Model: `lib/models/practice_item.dart`, Screen: `lib/screens/practice/`.
 ### Phase 2 (geplant): Hub + Themen-Chats
 
 Wird eingeführt, sobald neue Disziplinen dazukommen, die echten Dispatch-Bedarf erzeugen (z.B. Logo-Design, Marketing). Geplante Struktur:
@@ -144,3 +147,4 @@ Weitere Themen-Chats analog ergänzen, sobald sich Disziplinen herausbilden, die
 
 - Code-Seite von Backup (Flutter ↔ WebDAV) → Nota-Code-Chat (in Phase 1: einfach im `Nota`-Chat)
 - Server-/Infra-Seite (Nextcloud-Konfig, Pi) → Homecloud-Hub, nicht hier duplizieren
+

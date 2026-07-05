@@ -7,6 +7,7 @@ import '../models/song.dart';
 import '../models/setlist.dart';
 import '../models/song_slot.dart';
 import '../models/gig.dart';
+import '../models/practice_item.dart';
 import '../models/drawing_stroke.dart';
 import '../widgets/drawing_canvas.dart';
 
@@ -17,6 +18,7 @@ class BandProvider extends ChangeNotifier {
   Map<String, List<Song>> _songs = {};
   Map<String, List<Setlist>> _setlists = {};
   Map<String, List<Gig>> _gigs = {};
+  Map<String, List<PracticeItem>> _practiceItems = {};
 
   // Debounce nur für den heißen Stroke-Save-Pfad
   Timer? _strokeSaveDebounce;
@@ -36,6 +38,27 @@ class BandProvider extends ChangeNotifier {
   List<Song> getSongs(String bandId) => List.unmodifiable(_songs[bandId] ?? []);
   List<Setlist> getSetlists(String bandId) => List.unmodifiable(_setlists[bandId] ?? []);
   List<Gig> getGigs(String bandId) => List.unmodifiable(_gigs[bandId] ?? []);
+  List<PracticeItem> getPracticeItems(String bandId) =>
+      List.unmodifiable(_practiceItems[bandId] ?? []);
+
+  /// Cross-Band-Aggregation (trägt den späteren Startscreen).
+  List<({String bandId, PracticeItem item})> get allPracticeItems {
+    final result = <({String bandId, PracticeItem item})>[];
+    _practiceItems.forEach((bandId, items) {
+      for (final item in items) {
+        result.add((bandId: bandId, item: item));
+      }
+    });
+    return result;
+  }
+
+  int openPracticeCount(String bandId) =>
+      (_practiceItems[bandId] ?? []).where((p) => !p.done).length;
+
+  int openPracticeCountForSong(String bandId, String songId) =>
+      (_practiceItems[bandId] ?? [])
+          .where((p) => !p.done && p.songId == songId)
+          .length;
 
   List<Song> getSongsForSetlist(String bandId, Setlist setlist) {
     final allSongs = _songs[bandId] ?? [];
@@ -127,6 +150,19 @@ class BandProvider extends ChangeNotifier {
             )).toList(),
           )).toList();
         });
+        // Backwards-compatible: alte Backups haben keinen 'practiceItems'-Key.
+        // Eigenes try-catch: ein defektes Practice-Item darf niemals
+        // Songs/Setlists/Gigs in _loadDefaults reißen (= Datenverlust).
+        _practiceItems = {};
+        try {
+          ((data['practiceItems'] as Map?) ?? {}).forEach((bandId, itemList) {
+            _practiceItems[bandId] = (itemList as List)
+                .map((p) => PracticeItem.fromJson(p))
+                .toList();
+          });
+        } catch (e) {
+          _practiceItems = {};
+        }
       } catch (e) {
         _loadDefaults();
       }
@@ -143,6 +179,7 @@ class BandProvider extends ChangeNotifier {
     _songs = {'1': [], '2': [], '3': []};
     _setlists = {'1': [], '2': [], '3': []};
     _gigs = {'1': [], '2': [], '3': []};
+    _practiceItems = {'1': [], '2': [], '3': []};
   }
 
   // Stroke-Save debounced: schreibt erst ~800ms nach dem letzten Pen-Up/Erase.
@@ -233,6 +270,10 @@ class BandProvider extends ChangeNotifier {
           }).toList(),
         }).toList(),
       )),
+      'practiceItems': _practiceItems.map((bandId, items) => MapEntry(
+        bandId,
+        items.map((p) => p.toJson()).toList(),
+      )),
     };
     await prefs.setString(_storageKey, jsonEncode(data));
   }
@@ -243,6 +284,7 @@ class BandProvider extends ChangeNotifier {
     _songs[band.id] = [];
     _setlists[band.id] = [];
     _gigs[band.id] = [];
+    _practiceItems[band.id] = [];
     _save();
     notifyListeners();
   }
@@ -283,6 +325,8 @@ class BandProvider extends ChangeNotifier {
 
   void deleteSong(String bandId, String songId) {
     _songs[bandId]?.removeWhere((s) => s.id == songId);
+    // Orphan-Handling: Practice-Items des Songs mit-löschen (Entscheidung 05.07.2026)
+    _practiceItems[bandId]?.removeWhere((p) => p.songId == songId);
     _save();
     notifyListeners();
   }
@@ -363,6 +407,56 @@ class BandProvider extends ChangeNotifier {
     final index = list.indexWhere((g) => g.id == gig.id);
     if (index != -1) {
       list[index] = gig;
+      _save();
+      notifyListeners();
+    }
+  }
+
+  // Practice Items
+  void addPracticeItem(String bandId, PracticeItem item) {
+    _practiceItems[bandId] ??= [];
+    _practiceItems[bandId]!.add(item);
+    _save();
+    notifyListeners();
+  }
+
+  void updatePracticeItem(String bandId, PracticeItem item) {
+    final list = _practiceItems[bandId];
+    if (list == null) return;
+    final index = list.indexWhere((p) => p.id == item.id);
+    if (index != -1) {
+      list[index] = item;
+      _save();
+      notifyListeners();
+    }
+  }
+
+  void deletePracticeItem(String bandId, String itemId) {
+    _practiceItems[bandId]?.removeWhere((p) => p.id == itemId);
+    _save();
+    notifyListeners();
+  }
+
+  void togglePracticeItemDone(String bandId, String itemId) {
+    final list = _practiceItems[bandId];
+    if (list == null) return;
+    final index = list.indexWhere((p) => p.id == itemId);
+    if (index != -1) {
+      list[index].done = !list[index].done;
+      _save();
+      notifyListeners();
+    }
+  }
+
+  void cyclePracticeItemPriority(String bandId, String itemId) {
+    final list = _practiceItems[bandId];
+    if (list == null) return;
+    final index = list.indexWhere((p) => p.id == itemId);
+    if (index != -1) {
+      final current = list[index].priority;
+      final next = PracticePriority.values[
+          (current.index + 1) % PracticePriority.values.length];
+      list[index].priority = next;
       _save();
       notifyListeners();
     }

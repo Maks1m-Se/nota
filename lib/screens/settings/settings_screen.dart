@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../services/nextcloud_service.dart';
 
@@ -173,8 +175,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () async {
-                              final prefs = await SharedPreferences.getInstance();
-                              final data = prefs.getString('nota_data') ?? '{}';
+                              // Export-Serializer: bettet Chart-Files als Base64
+                              // ein → nota_backup.json bleibt im alten Format.
+                              final provider = context.read<BandProvider>();
+                              final data = await provider.exportBackupJson() ?? '{}';
                               await _backup(data);
                             },
                             icon: const Icon(Icons.cloud_upload),

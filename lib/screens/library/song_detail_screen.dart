@@ -11,7 +11,7 @@ import '../practice/add_practice_item_dialog.dart';
 import '../../models/practice_item.dart';
 import '../../models/setlist.dart';
 import '../../models/song_slot.dart';
-import 'dart:convert';
+import '../../services/chart_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:pdfx/pdfx.dart';
 
@@ -87,7 +87,8 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
 
       if (image == null) return;
 
-      final base64 = base64Encode(image.bytes);
+      // Direkt als File speichern — kein Base64-Encode mehr im Import-Pfad.
+      final fileName = await ChartStorage.saveChart(song.id, image.bytes);
       final updated = Song(
         id: song.id,
         title: song.title,
@@ -101,12 +102,11 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
         hasSolo: song.hasSolo,
         hasBacking: song.hasBacking,
         canvasBackground: song.canvasBackground,
-        chordChartBase64: base64,
+        chordChartFile: fileName,
         chordChartX: 0.0,
         chordChartY: 0.0,
         chordChartScale: 1.0,
         strokes: song.strokes,
-        quickStrokes: song.quickStrokes,
       );
       if (mounted) {
         context.read<BandProvider>().updateSong(widget.bandId, updated);
@@ -135,12 +135,11 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
       hasSolo: song.hasSolo,
       hasBacking: song.hasBacking,
       canvasBackground: song.canvasBackground,
-      chordChartBase64: null,
+      chordChartFile: null, // updateSong räumt das File ab (Lösch-Hygiene)
       chordChartX: 0.0,
       chordChartY: 0.0,
       chordChartScale: 1.0,
       strokes: song.strokes,
-      quickStrokes: song.quickStrokes,
     );
     context.read<BandProvider>().updateSong(widget.bandId, updated);
     setState(() => _chordChartEditMode = false);
@@ -296,7 +295,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
             onColorChanged: (c) => setState(() => _selectedColor = c),
             onWidthChanged: (w) => setState(() => _selectedWidth = w),
             onEraserToggled: (e) => setState(() => _isEraser = e),
-            hasChordChart: song.chordChartBase64 != null,
+            hasChordChart: song.chordChartFile != null,
             chordChartEditMode: _chordChartEditMode,
             onLoadPdf: () => _loadPdf(song),
             onToggleChordChartEdit: () => setState(() => _chordChartEditMode = !_chordChartEditMode),
@@ -316,8 +315,11 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                 hasSolo: song.hasSolo,
                 hasBacking: song.hasBacking,
                 canvasBackground: b,
+                chordChartFile: song.chordChartFile,
+                chordChartX: song.chordChartX,
+                chordChartY: song.chordChartY,
+                chordChartScale: song.chordChartScale,
                 strokes: song.strokes,
-                quickStrokes: song.quickStrokes,
               );
               context.read<BandProvider>().updateSong(widget.bandId, updated);
             },
@@ -351,7 +353,7 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                           : DrawingTool.pen;
                     });
                   },
-                  chordChartBase64: song.chordChartBase64,
+                  chordChartFile: song.chordChartFile,
                   chordChartX: song.chordChartX,
                   chordChartY: song.chordChartY,
                   chordChartScale: song.chordChartScale,
@@ -370,12 +372,11 @@ class _SongDetailScreenState extends State<SongDetailScreen> {
                       hasSolo: song.hasSolo,
                       hasBacking: song.hasBacking,
                       canvasBackground: song.canvasBackground,
-                      chordChartBase64: song.chordChartBase64,
+                      chordChartFile: song.chordChartFile,
                       chordChartX: x,
                       chordChartY: y,
                       chordChartScale: scale,
                       strokes: song.strokes,
-                      quickStrokes: song.quickStrokes,
                     );
                     context.read<BandProvider>().updateSong(widget.bandId, updated);
                   },
@@ -433,8 +434,12 @@ class _MetadataPanelState extends State<_MetadataPanel> {
       outro: _outroController.text.trim(),
       hasSolo: widget.song.hasSolo,
       hasBacking: widget.song.hasBacking,
+      canvasBackground: widget.song.canvasBackground,
+      chordChartFile: widget.song.chordChartFile,
+      chordChartX: widget.song.chordChartX,
+      chordChartY: widget.song.chordChartY,
+      chordChartScale: widget.song.chordChartScale,
       strokes: widget.song.strokes,
-      quickStrokes: widget.song.quickStrokes,
     );
     context.read<BandProvider>().updateSong(widget.bandId, updated);
   }
@@ -489,8 +494,12 @@ class _MetadataPanelState extends State<_MetadataPanel> {
                     outro: widget.song.outro,
                     hasSolo: v,
                     hasBacking: widget.song.hasBacking,
+                    canvasBackground: widget.song.canvasBackground,
+                    chordChartFile: widget.song.chordChartFile,
+                    chordChartX: widget.song.chordChartX,
+                    chordChartY: widget.song.chordChartY,
+                    chordChartScale: widget.song.chordChartScale,
                     strokes: widget.song.strokes,
-                    quickStrokes: widget.song.quickStrokes,
                   );
                   context.read<BandProvider>().updateSong(widget.bandId, updated);
                 },
@@ -514,8 +523,12 @@ class _MetadataPanelState extends State<_MetadataPanel> {
                     outro: widget.song.outro,
                     hasSolo: widget.song.hasSolo,
                     hasBacking: v,
+                    canvasBackground: widget.song.canvasBackground,
+                    chordChartFile: widget.song.chordChartFile,
+                    chordChartX: widget.song.chordChartX,
+                    chordChartY: widget.song.chordChartY,
+                    chordChartScale: widget.song.chordChartScale,
                     strokes: widget.song.strokes,
-                    quickStrokes: widget.song.quickStrokes,
                   );
                   context.read<BandProvider>().updateSong(widget.bandId, updated);
                 },

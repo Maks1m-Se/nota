@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/drawing_stroke.dart';
+import '../services/chart_storage.dart';
 import 'dart:ui' as ui;
-import 'dart:convert';
 
 enum CanvasBackground {
   dark,
@@ -25,7 +25,7 @@ class DrawingCanvas extends StatefulWidget {
   final VoidCallback? onUndo;
   final VoidCallback? onDoublePenButton;
   final Function(bool)? onEraserToggled;
-  final String? chordChartBase64;
+  final String? chordChartFile;
   final double chordChartX;
   final double chordChartY;
   final double chordChartScale;
@@ -44,7 +44,7 @@ class DrawingCanvas extends StatefulWidget {
     this.onUndo,
     this.onDoublePenButton,
     this.onEraserToggled,
-    this.chordChartBase64,
+    this.chordChartFile,
     this.chordChartX = 0.0,
     this.chordChartY = 0.0,
     this.chordChartScale = 1.0,
@@ -76,8 +76,8 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
     _chartX = widget.chordChartX;
     _chartY = widget.chordChartY;
     _chartScale = widget.chordChartScale;
-    if (widget.chordChartBase64 != null) {
-      _loadChordChart(widget.chordChartBase64!);
+    if (widget.chordChartFile != null) {
+      _loadChordChart(widget.chordChartFile!);
     }
   }
 
@@ -90,9 +90,9 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
     if (!widget.editable && _currentStroke != null) {
       setState(() => _currentStroke = null);
     }
-    if (oldWidget.chordChartBase64 != widget.chordChartBase64) {
-      if (widget.chordChartBase64 != null) {
-        _loadChordChart(widget.chordChartBase64!);
+    if (oldWidget.chordChartFile != widget.chordChartFile) {
+      if (widget.chordChartFile != null) {
+        _loadChordChart(widget.chordChartFile!);
       } else {
         setState(() => _chordChartImage = null);
       }
@@ -111,10 +111,17 @@ class _DrawingCanvasState extends State<DrawingCanvas> {
     }
   }
 
-  Future<void> _loadChordChart(String base64) async {
-    final bytes = base64Decode(base64);
+  Future<void> _loadChordChart(String fileName) async {
+    // Async File-I/O statt base64Decode auf dem Main-Isolate.
+    final bytes = await ChartStorage.loadChart(fileName);
+    if (!mounted) return;
+    if (bytes == null) {
+      setState(() => _chordChartImage = null);
+      return;
+    }
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
+    if (!mounted) return;
     setState(() => _chordChartImage = frame.image);
   }
 

@@ -1,6 +1,6 @@
 # Nota – Backlog
 
-**Letzter Stand:** 05.07.2026
+**Letzter Stand:** 06.07.2026
 
 ## Aktuell in Arbeit
 
@@ -33,10 +33,10 @@
 - [ ] Abbreviation-Vorschläge automatisch
 - [ ] Gig Live Notes
 - [ ] Canvas-Performance: Strich-Cloning O(n²) → mutable Append (verspätete Striche / gerade Linien bei langem Schreiben)
-- [ ] Canvas Rest-Lag: periodische Save-Spikes — jeder Debounce-Save encodet den vollen Blob (base64-Charts dominieren) synchron. Fix: Chart-Base64 cachen / Encode off-isolate. Null Daten-Risiko.
-- [ ] `quickStrokes`-Feld (Song-Model): ungenutzt. Entscheidung nutzen/entfernen offen.
+- [ ] Canvas Rest-Lag: periodische Save-Spikes bleiben. **Diagnose korrigiert (06.07.):** NICHT die Charts — der Blob (4,6 MB gemessen am Gerät) ist zu 99 % Strokes-JSON. Ursache: `DrawingStroke.toJson` schreibt jeden Punkt als `{"x":123.456789…,"y":…}` mit voller Double-Präzision (~66 chars/Punkt), dazu `widths` als volle Doubles. Fix ranked: (1) Koordinaten + Widths bei Serialisierung auf 1 Nachkommastelle runden (0,1 px unter Stift-Auflösung, ~1,5 MB, trivial, altes Format bleibt lesbar); (2) kompakte Punkt-Codierung (`[x,y]`-Arrays statt Objekte, ~40 % weniger, braucht Backwards-Load für beide Formate); (3) Isolate-Encoding — erst wenn (1)+(2) nicht reichen. Null Daten-Risiko.
 - [ ] Cross-Band Practice-Startscreen: `allPracticeItems`-Getter liegt bereit, UI ausstehend.
 - [ ] Backlog HOCH verifizieren: „Mehrere Songs/Setlists hinzufügen" + „Gig-Kartenlayout" gegen App-Stand prüfen.
+- [ ] Backup-Roundtrip nach Chart→File-Umbau am Gerät verifizieren (Export→Restore, + altes Base64-Backup restoren). Beim Geräte-Test 06.07. übersprungen, weil Nextcloud-Server down. Code-Pfad (Export-Serializer bettet Base64 ein, Restore + `_load`-Migration extrahiert wieder zu Files) ist implementiert; Migrations-Zweig implizit ok (identisch zum App-Start-Load, der am Gerät fehlerfrei lief), aber der volle Roundtrip ist ungetestet.
 
 ## Prio NIEDRIG
 
@@ -64,6 +64,7 @@
 ## Erledigt (chronologisch absteigend)
 
 **2026 (Juli):**
+- Chord Charts → Files (via Claude Code, 5 Phasen): Chart-PNGs raus aus dem Prefs-Blob, jetzt als Files in `Documents/charts/` (ChartStorage-Service, path_provider). Blob referenziert nur noch Dateinamen. `_load`-Migration Base64→File (greift auch nach Backup-Restore), Lösch-Hygiene in `updateSong`/`deleteSong`, Export-Serializer hält `nota_backup.json` formatidentisch (Base64 embedded). `quickStrokes`-Feld komplett entfernt. Nebenfix: mehrere `Song(...)`-Call-Sites kopierten `chordChartBase64`/`canvasBackground` nicht mit → jedes Metadaten-Edit verwarf das Chart; jetzt alle Felder explizit gesetzt. Geräte-Test bestätigte Migration/Import/Löschung — **aber** Save-Spikes NICHT behoben (siehe MITTEL: Blob ist Strokes-JSON, nicht Charts).
 - Canvas-Save-Debounce: Stroke-Save aus dem Hot-Path (800ms + Lifecycle-Flush) → Zeichen-Lag massiv reduziert. Diagnose: `_save()` auskommentiert → Lag weg = Save als Täter bestätigt.
 - Pre-Gig-Sprint: Library-Suche, Duplizieren (Songs/Setlists/Gigs), Drag&Drop (echt — war vorher fälschlich als erledigt geführt), Edit-Dialog, Vollbild-Fix, Live-Empty-Guard
 - To-Practice Feature (via Claude Code, 4 Phasen): PracticeItem-Model, band-scoped Provider-Layer (backwards-compatible Load + inneres try-catch), Capture-Dialog (2 Entry-Points), Practice-Screen (Prio-Sort, Prio-Cycle, Erledigt-Sektion, Filter, Swipe-Delete), Amber-Badges (Library + Nav), Orphan-Delete (Items sterben mit dem Song).

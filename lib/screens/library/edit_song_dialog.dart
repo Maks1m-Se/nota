@@ -69,8 +69,12 @@ class _EditSongDialogState extends State<EditSongDialog> {
       outro: _outroController.text.trim(),
       hasSolo: _hasSolo,
       hasBacking: _hasBacking,
+      canvasBackground: widget.song.canvasBackground,
+      chordChartFile: widget.song.chordChartFile,
+      chordChartX: widget.song.chordChartX,
+      chordChartY: widget.song.chordChartY,
+      chordChartScale: widget.song.chordChartScale,
       strokes: widget.song.strokes,
-      quickStrokes: widget.song.quickStrokes,
     );
     context.read<BandProvider>().updateSong(widget.bandId, updated);
     Navigator.of(context).pop();

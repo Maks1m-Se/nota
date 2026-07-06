@@ -14,8 +14,13 @@ class Song {
   bool hasSolo;
   bool hasBacking;
   List<DrawingStroke> strokes;
-  List<DrawingStroke> quickStrokes;
   CanvasBackground canvasBackground;
+
+  /// Chart liegt als PNG-File in charts/ (siehe ChartStorage), hier nur Filename.
+  String? chordChartFile;
+
+  /// Nur noch Migrations-Träger für alte Blobs/Backups — wird in
+  /// BandProvider._load() zu chordChartFile extrahiert und dann genullt.
   String? chordChartBase64;
   double chordChartX;
   double chordChartY;
@@ -34,12 +39,11 @@ class Song {
     this.hasSolo = false,
     this.hasBacking = false,
     this.canvasBackground = CanvasBackground.dark,
+    this.chordChartFile,
     this.chordChartBase64,
     this.chordChartX = 0.0,
     this.chordChartY = 0.0,
     this.chordChartScale = 1.0,
     List<DrawingStroke>? strokes,
-    List<DrawingStroke>? quickStrokes,
-  }) : strokes = strokes ?? [],
-       quickStrokes = quickStrokes ?? [];
+  }) : strokes = strokes ?? [];
 }

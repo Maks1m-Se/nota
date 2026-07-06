@@ -9,6 +9,7 @@ import '../models/song_slot.dart';
 import '../models/gig.dart';
 import '../models/practice_item.dart';
 import '../models/drawing_stroke.dart';
+import '../services/chart_storage.dart';
 import '../widgets/drawing_canvas.dart';
 
 class BandProvider extends ChangeNotifier {
@@ -123,7 +124,7 @@ class BandProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_storageKey);
     debugPrint('All keys: ${prefs.getKeys()}');
-    debugPrint('Loaded raw data: $raw');
+    debugPrint('Loaded nota_data: ${raw?.length ?? 0} chars');
     if (raw == null) {
       _loadDefaults();
     } else {
@@ -146,16 +147,15 @@ class BandProvider extends ChangeNotifier {
             outro: s['outro'] ?? '',
             hasSolo: s['hasSolo'] ?? false,
             hasBacking: s['hasBacking'] ?? false,
+            // 'quickStrokes'-Key alter Blobs wird bewusst ignoriert (Feature entfernt).
             strokes: (s['strokes'] as List? ?? [])
-                .map((stroke) => DrawingStroke.fromJson(stroke))
-                .toList(),
-            quickStrokes: (s['quickStrokes'] as List? ?? [])
                 .map((stroke) => DrawingStroke.fromJson(stroke))
                 .toList(),
             canvasBackground: CanvasBackground.values.firstWhere(
               (e) => e.name == s['canvasBackground'],
               orElse: () => CanvasBackground.dark,
             ),
+            chordChartFile: s['chordChartFile'],
             chordChartBase64: s['chordChartBase64'],
             chordChartX: (s['chordChartX'] ?? 0.0).toDouble(),
             chordChartY: (s['chordChartY'] ?? 0.0).toDouble(),
@@ -215,7 +215,34 @@ class BandProvider extends ChangeNotifier {
         _loadDefaults();
       }
     }
+    await _migrateChartsToFiles();
     notifyListeners();
+  }
+
+  /// Migration Base64 → File. Läuft bei jedem App-Start und greift damit
+  /// auch nach einem Backup-Restore (Restore schreibt den Blob 1:1 in
+  /// Prefs, Neustart lädt und migriert). Nur bei Schreib-Erfolg wird
+  /// chordChartFile gesetzt und base64 genullt — bei Fehler bleibt base64
+  /// erhalten und wird von _save als Fallback weiter persistiert.
+  Future<void> _migrateChartsToFiles() async {
+    var migrated = false;
+    for (final songs in _songs.values) {
+      for (final song in songs) {
+        final base64 = song.chordChartBase64;
+        if (base64 == null || song.chordChartFile != null) continue;
+        try {
+          final bytes = base64Decode(base64);
+          song.chordChartFile = await ChartStorage.saveChart(song.id, bytes);
+          song.chordChartBase64 = null;
+          migrated = true;
+        } catch (_) {
+          // Decode-/Schreib-Fehler: base64 behalten (kein Datenverlust).
+        }
+      }
+    }
+    if (migrated) {
+      await _save(); // persistiert den schlanken Blob einmalig
+    }
   }
 
   void _loadDefaults() {
@@ -274,9 +301,11 @@ class BandProvider extends ChangeNotifier {
           'hasSolo': s.hasSolo,
           'hasBacking': s.hasBacking,
           'strokes': s.strokes.map((stroke) => stroke.toJson()).toList(),
-          'quickStrokes': s.quickStrokes.map((stroke) => stroke.toJson()).toList(),
           'canvasBackground': s.canvasBackground.name,
-          'chordChartBase64': s.chordChartBase64,
+          'chordChartFile': s.chordChartFile,
+          // Fallback nur für den Migrations-Fehlerfall — normal ist das null
+          // und der Key fehlt (Blob bleibt schlank).
+          if (s.chordChartBase64 != null) 'chordChartBase64': s.chordChartBase64,
           'chordChartX': s.chordChartX,
           'chordChartY': s.chordChartY,
           'chordChartScale': s.chordChartScale,
@@ -323,7 +352,37 @@ class BandProvider extends ChangeNotifier {
         items.map((p) => p.toJson()).toList(),
       )),
     };
-    await prefs.setString(_storageKey, jsonEncode(data));
+    final encoded = jsonEncode(data);
+    debugPrint('Saved nota_data: ${encoded.length} chars');
+    await prefs.setString(_storageKey, encoded);
+  }
+
+  /// Nextcloud-Export im ALTEN Backup-Format: Chart-Files werden als
+  /// chordChartBase64 eingebettet, chordChartFile weggelassen —
+  /// nota_backup.json bleibt damit zu allen App-Ständen kompatibel.
+  Future<String?> exportBackupJson() async {
+    await flushPendingSave();
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_storageKey);
+    if (raw == null) return null;
+    final data = jsonDecode(raw);
+    final songsMap = data['songs'] as Map?;
+    if (songsMap != null) {
+      for (final songList in songsMap.values) {
+        for (final s in songList as List) {
+          final song = s as Map;
+          final fileName = song['chordChartFile'];
+          if (fileName is String) {
+            final bytes = await ChartStorage.loadChart(fileName);
+            if (bytes != null) {
+              song['chordChartBase64'] = base64Encode(bytes);
+            }
+          }
+          song.remove('chordChartFile');
+        }
+      }
+    }
+    return jsonEncode(data);
   }
 
   // Mutations
@@ -350,28 +409,35 @@ class BandProvider extends ChangeNotifier {
     if (list == null) return;
     final index = list.indexWhere((s) => s.id == song.id);
     if (index != -1) {
+      // Lösch-Hygiene: Chart entfernt oder ersetzt → altes File abräumen.
+      final oldFile = list[index].chordChartFile;
+      if (oldFile != null && oldFile != song.chordChartFile) {
+        ChartStorage.deleteChart(oldFile);
+      }
       list[index] = song;
       _save();
       notifyListeners();
     }
   }
-  
-  void updateSongStrokes(String bandId, String songId, List<DrawingStroke> strokes, {bool isQuick = false}) {
+
+  void updateSongStrokes(String bandId, String songId, List<DrawingStroke> strokes) {
     final list = _songs[bandId];
     if (list == null) return;
     final index = list.indexWhere((s) => s.id == songId);
     if (index != -1) {
-      if (isQuick) {
-        list[index].quickStrokes = strokes;
-      } else {
-        list[index].strokes = strokes;
-      }
+      list[index].strokes = strokes;
       _scheduleStrokeSave(); // debounced statt sofort — behebt den Save-Freeze
       notifyListeners();
     }
   }
 
   void deleteSong(String bandId, String songId) {
+    // Lösch-Hygiene: Chart-File des Songs mit-löschen.
+    final song = _songs[bandId]?.where((s) => s.id == songId).firstOrNull;
+    final chartFile = song?.chordChartFile;
+    if (chartFile != null) {
+      ChartStorage.deleteChart(chartFile);
+    }
     _songs[bandId]?.removeWhere((s) => s.id == songId);
     // Orphan-Handling: Practice-Items des Songs mit-löschen (Entscheidung 05.07.2026)
     _practiceItems[bandId]?.removeWhere((p) => p.songId == songId);

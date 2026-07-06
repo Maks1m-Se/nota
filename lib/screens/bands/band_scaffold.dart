@@ -96,8 +96,9 @@ class _BandScaffoldState extends State<BandScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    // Cross-Band: Badge zählt offene Practice-Items über alle Bands.
     final practiceBadgeCount =
-        context.watch<BandProvider>().openPracticeCount(widget.band.id);
+        context.watch<BandProvider>().openPracticeCountAll;
     return Scaffold(
       body: Row(
         children: [

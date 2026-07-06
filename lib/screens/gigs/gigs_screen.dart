@@ -18,10 +18,14 @@ class GigsScreen extends StatelessWidget {
     final provider = context.watch<BandProvider>();
     final gigs = provider.getGigs(bandId);
     final songs = provider.getSongs(bandId);
-    final now = DateTime.now();
 
-    final upcoming = gigs.where((g) => g.date == null || g.date!.isAfter(now)).toList();
-    final past = gigs.where((g) => g.date != null && g.date!.isBefore(now)).toList();
+    // Tages-genau via BandProvider: heute zählt als UPCOMING, nicht PAST.
+    final todayGigs = gigs.where((g) => BandProvider.isToday(g.date)).toList();
+    final upcoming = [
+      ...todayGigs,
+      ...gigs.where((g) => !BandProvider.isPastDay(g.date) && !BandProvider.isToday(g.date)),
+    ];
+    final past = gigs.where((g) => BandProvider.isPastDay(g.date)).toList();
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -50,7 +54,13 @@ class GigsScreen extends StatelessWidget {
                 if (upcoming.isNotEmpty) ...[
                   const Text('UPCOMING', style: TextStyle(color: AppTheme.textMuted, fontSize: 11, letterSpacing: 0.8)),
                   const SizedBox(height: 8),
-                  ...upcoming.map((gig) => _GigCard(gig: gig, isPast: false, songs: songs, bandId: bandId)),
+                  ...upcoming.map((gig) => _GigCard(
+                        gig: gig,
+                        isPast: false,
+                        isToday: BandProvider.isToday(gig.date),
+                        songs: songs,
+                        bandId: bandId,
+                      )),
                   const SizedBox(height: 20),
                 ],
                 if (past.isNotEmpty) ...[
@@ -67,10 +77,17 @@ class GigsScreen extends StatelessWidget {
 class _GigCard extends StatelessWidget {
   final Gig gig;
   final bool isPast;
+  final bool isToday;
   final List<Song> songs;
   final String bandId;
 
-  const _GigCard({required this.gig, required this.isPast, required this.songs, required this.bandId});
+  const _GigCard({
+    required this.gig,
+    required this.isPast,
+    this.isToday = false,
+    required this.songs,
+    required this.bandId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +95,16 @@ class _GigCard extends StatelessWidget {
       opacity: isPast ? 0.5 : 1.0,
       child: Card(
         margin: const EdgeInsets.only(bottom: 10),
+        // Heute-Gig: subtiles Highlight in Primary (Konvention: Amber = Practice)
+        shape: isToday
+            ? RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: AppTheme.primaryColor.withValues(alpha: 0.6)),
+              )
+            : null,
         child: ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: _DateBox(date: gig.date),
+          leading: _DateBox(date: gig.date, isToday: isToday),
           title: Text(gig.name, style: const TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w500)),
           subtitle: Text(gig.venue, style: const TextStyle(color: AppTheme.textSecondary)),
           trailing: Container(
@@ -163,8 +187,9 @@ class _GigCard extends StatelessWidget {
 
 class _DateBox extends StatelessWidget {
   final DateTime? date;
+  final bool isToday;
 
-  const _DateBox({required this.date});
+  const _DateBox({required this.date, this.isToday = false});
 
   @override
   Widget build(BuildContext context) {
@@ -174,16 +199,19 @@ class _DateBox extends StatelessWidget {
       width: 48,
       padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.15),
+        color: AppTheme.primaryColor.withValues(alpha: isToday ? 0.25 : 0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.4)),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: isToday ? 0.8 : 0.4)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('${date!.day}', style: const TextStyle(color: AppTheme.primaryColor, fontSize: 16, fontWeight: FontWeight.w500, height: 1)),
           const SizedBox(height: 2),
-          Text(months[date!.month - 1], style: const TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+          if (isToday)
+            const Text('HEUTE', style: TextStyle(color: AppTheme.primaryColor, fontSize: 8, fontWeight: FontWeight.w600, letterSpacing: 0.5))
+          else
+            Text(months[date!.month - 1], style: const TextStyle(color: AppTheme.textMuted, fontSize: 10)),
         ],
       ),
     );

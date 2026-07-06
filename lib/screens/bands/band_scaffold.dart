@@ -1,27 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/band.dart';
+import '../../models/gig.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import '../library/library_screen.dart';
 import '../setlists/setlists_screen.dart';
 import '../gigs/gigs_screen.dart';
+import '../gigs/gig_detail_screen.dart';
 import '../practice/practice_screen.dart';
 
 class BandScaffold extends StatefulWidget {
   final Band band;
 
-  const BandScaffold({super.key, required this.band});
+  /// Ziel-Tab beim Öffnen (0=Library, 1=Setlists, 2=Gigs, 3=Practice).
+  /// Ohne Angabe: 2 (Gigs) — bisheriges Verhalten.
+  final int? initialIndex;
+
+  /// Öffnet nach dem ersten Frame direkt das GigDetail dieses Gigs
+  /// (impliziert Gigs-Tab). Für den Startscreen-Gig-Widget-Tap.
+  final Gig? initialGig;
+
+  const BandScaffold({
+    super.key,
+    required this.band,
+    this.initialIndex,
+    this.initialGig,
+  });
 
   @override
   State<BandScaffold> createState() => _BandScaffoldState();
 }
 
 class _BandScaffoldState extends State<BandScaffold> {
-  int _selectedIndex = 2;
+  late int _selectedIndex;
   bool _sidebarOpen = true;
 
   final _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // initialGig impliziert Gigs-Tab, sonst initialIndex, sonst Default Gigs.
+    _selectedIndex = widget.initialGig != null ? 2 : (widget.initialIndex ?? 2);
+    if (widget.initialGig != null) {
+      // Push erst nach dem ersten Frame — der interne Navigator existiert
+      // erst, wenn build einmal durchgelaufen ist.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final songs =
+            context.read<BandProvider>().getSongs(widget.band.id);
+        _navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => GigDetailScreen(
+              gig: widget.initialGig!,
+              songs: songs,
+              bandId: widget.band.id,
+            ),
+          ),
+        );
+      });
+    }
+  }
 
   final List<_NavItem> _navItems = const [
     _NavItem(icon: Icons.library_music, label: 'Library'),

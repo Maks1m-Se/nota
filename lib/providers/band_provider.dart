@@ -55,6 +55,50 @@ class BandProvider extends ChangeNotifier {
   int openPracticeCount(String bandId) =>
       (_practiceItems[bandId] ?? []).where((p) => !p.done).length;
 
+  // Tages-genaue Datums-Logik zentral hier — Screens vergleichen nie selbst
+  // gegen DateTime.now() (Gig-Datum ist Mitternacht via showDatePicker).
+  /// True wenn [date] am heutigen Kalendertag liegt.
+  static bool isToday(DateTime? date) {
+    if (date == null) return false;
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
+
+  /// True wenn [date] vor dem heutigen Kalendertag liegt (Tages-genau).
+  static bool isPastDay(DateTime? date) {
+    if (date == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return DateTime(date.year, date.month, date.day).isBefore(today);
+  }
+
+  /// Cross-Band: Gig mit Datum == heute, oder null. Gigs ohne Datum zählen nie.
+  ({String bandId, Gig gig})? todayGig() {
+    for (final entry in _gigs.entries) {
+      for (final gig in entry.value) {
+        if (isToday(gig.date)) {
+          return (bandId: entry.key, gig: gig);
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Cross-Band: Gig mit frühestem Datum >= heute (inkl. heute), oder null.
+  ({String bandId, Gig gig})? nextUpcomingGig() {
+    ({String bandId, Gig gig})? best;
+    _gigs.forEach((bandId, gigs) {
+      for (final gig in gigs) {
+        final date = gig.date;
+        if (date == null || isPastDay(date)) continue;
+        if (best == null || date.isBefore(best!.gig.date!)) {
+          best = (bandId: bandId, gig: gig);
+        }
+      }
+    });
+    return best;
+  }
+
   int openPracticeCountForSong(String bandId, String songId) =>
       (_practiceItems[bandId] ?? [])
           .where((p) => !p.done && p.songId == songId)

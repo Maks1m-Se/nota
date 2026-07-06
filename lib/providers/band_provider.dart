@@ -55,6 +55,10 @@ class BandProvider extends ChangeNotifier {
   int openPracticeCount(String bandId) =>
       (_practiceItems[bandId] ?? []).where((p) => !p.done).length;
 
+  /// Cross-Band: offene Practice-Items über alle Bands (Sidebar-Badge).
+  int get openPracticeCountAll =>
+      allPracticeItems.where((e) => !e.item.done).length;
+
   // Tages-genaue Datums-Logik zentral hier — Screens vergleichen nie selbst
   // gegen DateTime.now() (Gig-Datum ist Mitternacht via showDatePicker).
   /// True wenn [date] am heutigen Kalendertag liegt.

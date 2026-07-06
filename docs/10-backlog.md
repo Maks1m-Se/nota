@@ -36,6 +36,7 @@
 - [ ] Canvas Rest-Lag: periodische Save-Spikes — jeder Debounce-Save encodet den vollen Blob (base64-Charts dominieren) synchron. Fix: Chart-Base64 cachen / Encode off-isolate. Null Daten-Risiko.
 - [ ] `quickStrokes`-Feld (Song-Model): ungenutzt. Entscheidung nutzen/entfernen offen.
 - [ ] Cross-Band Practice-Startscreen: `allPracticeItems`-Getter liegt bereit, UI ausstehend.
+- [ ] Practice-Screen cross-band: Sidebar-Badge zählt seit 06.07. alle Bands (`openPracticeCountAll`), der Screen dahinter (`PracticeScreen(bandId)`) ist aber weiter band-scoped → Badge N kann > angezeigte Items sein. Konsistenz-Fix: Screen ebenfalls cross-band (braucht Band-Zuordnung/-Label pro Item in der Liste). Eigener Scope.
 - [ ] Backlog HOCH verifizieren: „Mehrere Songs/Setlists hinzufügen" + „Gig-Kartenlayout" gegen App-Stand prüfen.
 
 ## Prio NIEDRIG

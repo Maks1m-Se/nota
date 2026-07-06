@@ -37,6 +37,8 @@ Bands → Songs / Setlists / Gigs (mit SongSlots für Reihenfolge)
 **Persistenz:** Alle Daten als ein einziges JSON-Blob in SharedPreferences. Chord Charts als Base64 im JSON. Stroke-Save ist debounced (`_scheduleStrokeSave`, 800ms) + Lifecycle-Flush (`flushPendingSave` in `app.dart`); alle anderen Saves sofort.
 `practiceItems` (band-scoped) als vierter Top-Level-Key im JSON-Blob. Backwards-compatible: alte Backups ohne den Key laufen (`as Map? ?? {}`), inneres try-catch schützt Songs/Setlists/Gigs vor Practice-Parse-Fehlern.
 
+Zentrale Datums-Logik im `BandProvider`: `isToday()`/`isPastDay()` (tages-genau, statisch), `todayGig()`/`nextUpcomingGig()` (cross-band, `(bandId, gig)`-Record). Screens vergleichen NICHT selbst gegen `DateTime.now()`.
+
 **File-Struktur:**
 ```
 lib/
@@ -47,6 +49,8 @@ lib/
 ```
 
 - **Practice:** Übungsliste pro Band. Items (Text, optional song-gebunden, Prio H/M/N, erledigt). Capture aus Song-AppBar (vorbelegt) + Practice-FAB (Dropdown). Prio-Sort, Erledigt-Sektion, Filter, Swipe-Delete. Amber-Badges in Library + Nav. Model: `lib/models/practice_item.dart`, Screen: `lib/screens/practice/`.
+
+- **Startscreen (Dashboard):** `band_list_screen.dart`. Widget-Zone (Landscape, zwei Karten): Gig-Widget (heutiger/nächster Gig cross-band) + Practice-Widget (Top-5 offen cross-band, direkt abhakbar). Darunter Band-Grid (3 Spalten). Tap navigiert via `BandScaffold(initialIndex/initialGig)` in die Ziel-Band.
 
 ## Setup / Deployment
 

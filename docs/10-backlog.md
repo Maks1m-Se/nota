@@ -4,7 +4,7 @@
 
 ## Aktuell in Arbeit
 
-*Nichts. Letztes Feature: To-Practice (komplett, via Claude Code).*
+- [ ] Startscreen (Recently Used, Upcoming Gigs)
 
 ## ⚠ Offene Architektur-Entscheidung (BLOCKER für Gig-Setlist-Bearbeitung)
 
@@ -23,6 +23,7 @@
 - [ ] Gig Kartenlayout überarbeiten
 - [ ] Setlists-Screen Sortierung (Parität mit Library)
 - [ ] Library Alphabet-Quick-Nav-Leiste (vertikal, bei alphabetischer + Key-Sortierung)
+- [ ] Setlist-Copy-Rename defekt: Umbenennen kopierter Setlisten wirkt nicht. War als erledigt geführt → Regression oder nie sauber gefixt. Verdacht: `updateSetlist` trifft die Kopie-Instanz nicht / Rename schreibt auf falsche ID. Nächste Sequenz, hypothesengetrieben.
 
 ## Prio MITTEL
 
@@ -66,6 +67,7 @@
 - Canvas-Save-Debounce: Stroke-Save aus dem Hot-Path (800ms + Lifecycle-Flush) → Zeichen-Lag massiv reduziert. Diagnose: `_save()` auskommentiert → Lag weg = Save als Täter bestätigt.
 - Pre-Gig-Sprint: Library-Suche, Duplizieren (Songs/Setlists/Gigs), Drag&Drop (echt — war vorher fälschlich als erledigt geführt), Edit-Dialog, Vollbild-Fix, Live-Empty-Guard
 - To-Practice Feature (via Claude Code, 4 Phasen): PracticeItem-Model, band-scoped Provider-Layer (backwards-compatible Load + inneres try-catch), Capture-Dialog (2 Entry-Points), Practice-Screen (Prio-Sort, Prio-Cycle, Erledigt-Sektion, Filter, Swipe-Delete), Amber-Badges (Library + Nav), Orphan-Delete (Items sterben mit dem Song).
+- Startscreen-Dashboard (via Claude Code, 3 Phasen): Gig-Tag-Bug gefixt (tages-genauer Vergleich, HEUTE als dritter Zustand in Primary), zentrale Datums-Getter im Provider, `BandScaffold.initialIndex/initialGig`, Gig- + Practice-Widget (cross-band, Practice direkt abhakbar), Band-Grid 3-spaltig.
 
 **2026 (Mai, Pre-Gig-Sprint):**
 - Library-Suche (Filter title + artist, Live, mit Counter X/Y und Clear-Button)

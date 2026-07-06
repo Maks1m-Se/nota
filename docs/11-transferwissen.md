@@ -74,6 +74,14 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 **Orphan-Handling Practice-Items: mit-löschen**
 - `deleteSong` löscht die Practice-Items des Songs mit. Entscheidung gegen „zu Allgemein umhängen" (würde song-lose Karteileichen erzeugen).
 
+**Gig-Datum: tages-genauer Vergleich + zentrale Getter**
+- Bug: `showDatePicker` liefert Mitternacht; `date.isBefore(now)` schob den Gig am eigenen Tag nach PAST. Fix: Vergleich auf `DateTime(y,m,d)`-Ebene.
+- „Heute" ist dritter Zustand (nicht upcoming/past-binär): bleibt oben, Highlight in Primary (NICHT Amber = Practice-reserviert).
+- Datums-Logik zentral im Provider (`isToday`/`isPastDay`/`todayGig`/`nextUpcomingGig`), Screens rechnen nicht selbst. Offen: `nextUpcomingGig` normalisiert Datum tages-genau, falls Gigs je echte Uhrzeiten im `date` tragen (aktuell alle Mitternacht).
+
+**Cross-Screen-Navigation via BandScaffold-Parameter**
+- `initialIndex` (Ziel-Tab) + `initialGig` (pusht GigDetail via `addPostFrameCallback` nach erstem Frame, wenn interner Navigator gemountet ist). Ermöglicht band-übergreifende Startscreen-Widgets, die gezielt in eine Band/Tab springen.
+
 ## UX-/Design-Entscheidungen
 
 **Live-Modus Standard = WithSidebar**

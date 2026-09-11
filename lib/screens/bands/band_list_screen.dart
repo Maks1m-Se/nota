@@ -4,6 +4,7 @@ import '../../models/band.dart';
 import '../../models/practice_item.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
+import 'add_band_dialog.dart';
 import 'band_scaffold.dart';
 import '../settings/settings_screen.dart';
 
@@ -60,7 +61,10 @@ class BandListScreen extends StatelessWidget {
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               childAspectRatio: 2.6,
-              children: bands.map((band) => _BandCard(band: band)).toList(),
+              children: [
+                ...bands.map((band) => _BandCard(band: band)),
+                const _AddBandCard(),
+              ],
             ),
           ],
         ),
@@ -467,6 +471,36 @@ class _BandCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Letzte Kachel im Band-Grid: legt eine neue Band an.
+/// Optisch wie _BandCard (Card + InkWell, radius 12), nur Plus statt Initiale.
+class _AddBandCard extends StatelessWidget {
+  const _AddBandCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          // Provider VOR dem await capturen — nach dem pop ist der
+          // Dialog-Context weg, der Grid-Context kann disposed sein.
+          final provider = context.read<BandProvider>();
+          final band = await showDialog<Band>(
+            context: context,
+            builder: (context) => const AddBandDialog(),
+          );
+          if (band == null) return;
+          provider.addBand(band);
+        },
+        child: const Center(
+          child: Icon(Icons.add, color: AppTheme.textMuted, size: 28),
         ),
       ),
     );

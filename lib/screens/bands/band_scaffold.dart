@@ -96,9 +96,18 @@ class _BandScaffoldState extends State<BandScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<BandProvider>();
+    // Band wurde anderswo gelöscht (z.B. im Startscreen) → zurück zum
+    // Startscreen, statt mit einer toten bandId weiterzuarbeiten.
+    if (!provider.bands.any((b) => b.id == widget.band.id)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
     // Cross-Band: Badge zählt offene Practice-Items über alle Bands.
-    final practiceBadgeCount =
-        context.watch<BandProvider>().openPracticeCountAll;
+    final practiceBadgeCount = provider.openPracticeCountAll;
     return Scaffold(
       body: Row(
         children: [

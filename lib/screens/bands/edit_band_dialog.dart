@@ -2,23 +2,29 @@ import 'package:flutter/material.dart';
 import '../../models/band.dart';
 import '../../theme/app_theme.dart';
 
-/// Dialog zum Anlegen einer Band. Gibt die fertige Band per pop zurück —
-/// das Persistieren (addBand) macht der Aufrufer.
-class AddBandDialog extends StatefulWidget {
-  const AddBandDialog({super.key});
+/// Dialog zum Bearbeiten einer Band (Name + Genre, beide vorbelegt).
+/// Bewusst als Edit- und nicht als Rename-Dialog geschnitten: spätere
+/// Band-Felder (Farbe etc.) kommen hier dazu, statt den Dialog zu ersetzen.
+/// Gibt die aktualisierte Band per pop zurück — updateBand macht der Aufrufer.
+class EditBandDialog extends StatefulWidget {
+  final Band band;
+
+  const EditBandDialog({super.key, required this.band});
 
   @override
-  State<AddBandDialog> createState() => _AddBandDialogState();
+  State<EditBandDialog> createState() => _EditBandDialogState();
 }
 
-class _AddBandDialogState extends State<AddBandDialog> {
-  final _nameController = TextEditingController();
-  final _genreController = TextEditingController();
+class _EditBandDialogState extends State<EditBandDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _genreController;
 
   @override
   void initState() {
     super.initState();
-    // Rebuild, damit der Create-Button auf leeren Namen reagiert.
+    _nameController = TextEditingController(text: widget.band.name);
+    _genreController = TextEditingController(text: widget.band.genre);
+    // Rebuild, damit der Save-Button auf leeren Namen reagiert.
     _nameController.addListener(_onNameChanged);
   }
 
@@ -36,8 +42,9 @@ class _AddBandDialogState extends State<AddBandDialog> {
 
   void _submit() {
     if (!_canSubmit) return;
+    // id bleibt, alle Felder explizit gesetzt (kein copy-with).
     final band = Band(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: widget.band.id,
       name: _nameController.text.trim(),
       genre: _genreController.text.trim(),
     );
@@ -87,7 +94,7 @@ class _AddBandDialogState extends State<AddBandDialog> {
     return AlertDialog(
       backgroundColor: AppTheme.surfaceColor,
       title: const Text(
-        'New Band',
+        'Edit Band',
         style: TextStyle(color: AppTheme.textPrimary),
       ),
       content: SizedBox(
@@ -125,7 +132,7 @@ class _AddBandDialogState extends State<AddBandDialog> {
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
           ),
-          child: const Text('Create'),
+          child: const Text('Save'),
         ),
       ],
     );

@@ -5,6 +5,7 @@ import '../../models/practice_item.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import 'add_band_dialog.dart';
+import 'edit_band_dialog.dart';
 import 'band_scaffold.dart';
 import '../settings/settings_screen.dart';
 
@@ -416,6 +417,104 @@ class _BandCard extends StatelessWidget {
 
   const _BandCard({required this.band});
 
+  static String _plural(int count, String singular, String plural) =>
+      '$count ${count == 1 ? singular : plural}';
+
+  /// Long-Press-Aktionen. Provider einmal hier capturen — die Callbacks
+  /// laufen nach dem Sheet-pop weiter und dürfen dessen Context nicht mehr
+  /// anfassen.
+  void _showActions(BuildContext context) {
+    final provider = context.read<BandProvider>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceColor,
+      builder: (sheetContext) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit, color: AppTheme.textSecondary),
+            title: const Text(
+              'Edit',
+              style: TextStyle(color: AppTheme.textPrimary),
+            ),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              // Grid-Context, nicht sheetContext — der ist nach dem pop tot.
+              _edit(context, provider);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete, color: Colors.red),
+            title: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              _confirmDelete(context, provider);
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _edit(BuildContext context, BandProvider provider) async {
+    final updated = await showDialog<Band>(
+      context: context,
+      builder: (context) => EditBandDialog(band: band),
+    );
+    if (updated == null) return;
+    provider.updateBand(updated);
+  }
+
+  Future<void> _confirmDelete(BuildContext context, BandProvider provider) async {
+    // Zahlen aus dem Provider: der Dialog benennt konkret, was mitgeht.
+    final details = [
+      '• ${_plural(provider.getSongs(band.id).length, 'song', 'songs')}'
+          ' (incl. chord charts)',
+      '• ${_plural(provider.getSetlists(band.id).length, 'setlist', 'setlists')}',
+      '• ${_plural(provider.getGigs(band.id).length, 'gig', 'gigs')}',
+      '• ${_plural(provider.getPracticeItems(band.id).length, 'practice item', 'practice items')}',
+    ].join('\n');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceColor,
+        title: const Text(
+          'Delete Band',
+          style: TextStyle(color: AppTheme.textPrimary),
+        ),
+        content: Text(
+          'Delete "${band.name}"?\n\n'
+          'This permanently deletes everything in this band:\n$details',
+          style: const TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    provider.deleteBand(band.id);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -430,6 +529,7 @@ class _BandCard extends StatelessWidget {
             ),
           );
         },
+        onLongPress: () => _showActions(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(

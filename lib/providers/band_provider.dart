@@ -396,6 +396,34 @@ class BandProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateBand(Band band) {
+    final index = _bands.indexWhere((b) => b.id == band.id);
+    if (index != -1) {
+      _bands[index] = band;
+      _save();
+      notifyListeners();
+    }
+  }
+
+  /// Löscht die Band samt allem, was an ihrer bandId hängt.
+  void deleteBand(String bandId) {
+    // Lösch-Hygiene: Chart-Files aller Songs der Band mit abräumen —
+    // sonst bleiben verwaiste PNGs in charts/ liegen.
+    for (final song in _songs[bandId] ?? const <Song>[]) {
+      final chartFile = song.chordChartFile;
+      if (chartFile != null) {
+        ChartStorage.deleteChart(chartFile);
+      }
+    }
+    _bands.removeWhere((b) => b.id == bandId);
+    _songs.remove(bandId);
+    _setlists.remove(bandId);
+    _gigs.remove(bandId);
+    _practiceItems.remove(bandId);
+    _save();
+    notifyListeners();
+  }
+
   void addSong(String bandId, Song song) {
     _songs[bandId] ??= [];  
     _songs[bandId]!.add(song);

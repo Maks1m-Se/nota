@@ -72,7 +72,7 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 - Verifikation: `_save()` in `updateSongStrokes` temporär auskommentiert → Lag komplett weg = Save als alleiniger Täter.
 - Fix: nur `updateSongStrokes` debounced (`_scheduleStrokeSave`, 800ms, Timer resettet pro Aufruf). In-Memory-Update + `notifyListeners` bleiben sofortig. Alle anderen Mutationen sofort → strukturelle Daten immer durable, kleinste Verlust-Fläche.
 - `flushPendingSave` via `WidgetsBindingObserver` in `app.dart` (`.value`-Provider) bei pause/inactive/detached → schließt Verlust-Fenster bis auf Hard-Kill <800ms.
-- Rest-Lag bleibt (A≈B über leere/volle Songs): periodische Save-Spikes, voller Encode pro Fire → als Backlog geparkt. NICHT Rendering (widerlegt durch A≈B).
+- Rest-Lag bleibt (A≈B über leere/volle Songs): periodische Save-Spikes, voller Encode pro Fire → als Backlog geparkt. NICHT Rendering — *(Einschätzung 09/2026 revidiert: der A≈B-Test variierte die Seitenfülle, nicht die Strichlänge, und konnte den Render-Pfad nicht widerlegen. Siehe "Canvas-Performance: drei getrennte Ursachen".)*.
 
 **Backwards-compatible Load bei neuem Blob-Key**
 - Neuer Top-Level-Key (`practiceItems`) additiv in den JSON-Blob. Alte Backups ohne Key: `as Map? ?? {}` → kein Crash.

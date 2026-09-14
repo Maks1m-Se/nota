@@ -240,7 +240,7 @@ g['setting'] ?? (g['isOutdoor'] == true ? 'Outdoor' : '')
 - In `onPointerMove` wird `_currentStroke` jedes Mal neu gebaut mit `[..._currentStroke!.points, newPoint]`
 - Bei 200 Punkten = 200 Kopien beim 200. Punkt
 - Symptome: verspätete Striche, Kurven werden zu Polylinien (Punkt-Drops durch Frame-Skip)
-- Fix verschoben: Backlog MITTEL "Canvas-Performance: Strich-Cloning O(n²) → mutable Append"
+- Fix verschoben: Backlog HOCH "Canvas-Performance: Strich-Cloning O(n²) → mutable Append"
 
 **Live-Modus Empty-State**
 - `_items`-Liste leer (Setliste ohne Songs) führte zu RangeError bei `_items[0]`

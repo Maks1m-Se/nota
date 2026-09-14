@@ -34,7 +34,7 @@ Flutter-basierte Setlist-Management-App für aktive Musiker. Optimiert für Tabl
 **Datenhierarchie:**
 Bands → Songs / Setlists / Gigs (mit SongSlots für Reihenfolge)
 
-**Persistenz:** Alle Daten als ein einziges JSON-Blob in SharedPreferences. Chord Charts als Base64 im JSON. Stroke-Save ist debounced (`_scheduleStrokeSave`, 800ms) + Lifecycle-Flush (`flushPendingSave` in `app.dart`); alle anderen Saves sofort.
+**Persistenz:** Alle Daten als ein einziges JSON-Blob in SharedPreferences. Chord Charts liegen seit 07/2026 als PNG-Files unter `documents/charts/`, im Blob steht nur der Dateiname (`chordChartFile`). Service: `lib/services/chart_storage.dart` (ChartStorage, alle Methoden static). Blob-Größe aktuell ~7 MB, nahezu vollständig Strichdaten. Stroke-Save ist debounced (`_scheduleStrokeSave`, 800ms) + Lifecycle-Flush (`flushPendingSave` in `app.dart`); alle anderen Saves sofort.
 `practiceItems` (band-scoped) als vierter Top-Level-Key im JSON-Blob. Backwards-compatible: alte Backups ohne den Key laufen (`as Map? ?? {}`), inneres try-catch schützt Songs/Setlists/Gigs vor Practice-Parse-Fehlern.
 
 Zentrale Datums-Logik im `BandProvider`: `isToday()`/`isPastDay()` (tages-genau, statisch), `todayGig()`/`nextUpcomingGig()` (cross-band, `(bandId, gig)`-Record). Screens vergleichen NICHT selbst gegen `DateTime.now()`.
@@ -51,6 +51,8 @@ lib/
 - **Practice:** Übungsliste pro Band. Items (Text, optional song-gebunden, Prio H/M/N, erledigt). Capture aus Song-AppBar (vorbelegt) + Practice-FAB (Dropdown). Prio-Sort, Erledigt-Sektion, Filter, Swipe-Delete. Amber-Badges in Library + Nav. Model: `lib/models/practice_item.dart`, Screen: `lib/screens/practice/`.
 
 - **Startscreen (Dashboard):** `band_list_screen.dart`. Widget-Zone (Landscape, zwei Karten): Gig-Widget (heutiger/nächster Gig cross-band) + Practice-Widget (Top-5 offen cross-band, direkt abhakbar). Darunter Band-Grid (3 Spalten). Tap navigiert via `BandScaffold(initialIndex/initialGig)` in die Ziel-Band.
+
+- **Band-Management:** Anlegen über "+"-Kachel im Grid, Long-Press → Bottom Sheet (Edit/Delete). `add_band_dialog.dart`, `edit_band_dialog.dart`. Delete räumt Songs, Setlists, Gigs, Practice-Items und Chart-Files ab.
 
 ## Setup / Deployment
 
@@ -81,12 +83,26 @@ git add . && git commit -m "..." && git push
 **Pi/Homecloud:**
 - Hostname: `boxy3006@HomeCloudMS`, IP `192.168.2.200`
 
+**Vollständiges Backup = ZWEI Artefakte** (seit Chart→Files-Migration):
+1. `shared_prefs/FlutterSharedPreferences.xml` — alle Daten außer Charts
+2. `app_flutter/charts/` — die Chart-PNGs
+
+adb-Route (PATH ist dauerhaft gesetzt):
+
+    $ts = Get-Date -Format 'yyyy-MM-dd_HHmm'
+    cmd /c "adb exec-out run-as com.nota.nota cat shared_prefs/FlutterSharedPreferences.xml > C:\Git\nota_backups\prefs_$ts.xml"
+    cmd /c "adb exec-out run-as com.nota.nota tar c app_flutter/charts > C:\Git\nota_backups\charts_$ts.tar"
+
+`cmd /c` ist Pflicht (PowerShells `>` schreibt UTF-16 und zerstört die XML).
+Danach Größen prüfen — ein fehlgeschlagener Befehl hinterlässt eine 0-Byte-Datei.
+
 ## Bekannte Einschränkungen
 
 - Canvas-Striche als absolute Pixel gespeichert → Sidebar-Modus zeigt Canvas-Ausschnitt. Refactoring zu relativen Koordinaten im Backlog.
 - Rotation für Chord Chart bewusst weggelassen, nachrüstbar.
 - Nextcloud Backup nur manuell.
-- Bei großen PDFs wächst Backup-Größe (Base64 im JSON).
+- Backup-JSON enthält Charts weiterhin als Base64 (Export-Format bewusst unverändert) → Backup-Datei wächst mit Chart-Zahl.
+- Prefs-Blob ~7 MB durch Strichdaten (volle Double-Präzision, Key-Namen pro Punkt) → Save-Spikes.
 - Mehrseitige PDFs nicht unterstützt (nur erste Seite).
 
 ## Designprinzipien

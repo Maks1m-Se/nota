@@ -20,9 +20,19 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 - Bewusst akzeptierter Nachteil: Sidebar-Modus zeigt Canvas-Ausschnitt
 - Refactoring zu relativen Koordinaten im Backlog (Prio niedrig, evtl. nicht nötig)
 
-**Chord Chart als Base64 im JSON (statt separate Dateien)**
-- Vereinfacht Backup (alles in einer Datei), keine Pfad-Verwaltung
-- Trade-off: Backup wird größer
+**Chord Charts als PNG-Files, nicht Base64 im Blob** *(geändert 07/2026)*
+- Ursprünglich Base64 im JSON — vereinfachte das Backup, ließ aber den
+  Prefs-Blob bei jedem Stroke-Save mit-serialisieren (Save-Spikes).
+- Jetzt: `documents/charts/<songId>.png`, im Blob nur `chordChartFile`.
+- Migration läuft in `_migrateChartsToFiles()` bei jedem `_load()` — alte
+  Blobs und alte Backups bleiben ladbar. Bei Schreib-Fehler bleibt das
+  Base64 erhalten (kein Datenverlust).
+- **Backup-Format bewusst UNVERÄNDERT:** `exportBackupJson()` liest die
+  Files und bettet sie wieder als Base64 ein, entfernt `chordChartFile`.
+  Ein Backup bleibt eine Datei, Restore-Pfad und WebDAV-Konfig unberührt.
+- Verworfen: ZIP-Backup (JSON + Files) — hätte Restore-Code, Doku und
+  WebDAV-Pfad angefasst, ohne Mehrwert.
+- Migration verifiziert 09/2026: 0 Base64-Reste im Blob, Referenzen = Dateien.
 
 **Nur erste PDF-Seite**
 - Chord Charts typischerweise einseitig
@@ -47,7 +57,7 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 
 **PDF-Drag persistieren onEnd, nicht onUpdate**
 - Erste Version rief bei jedem `onScaleUpdate` (60Hz) `updateSong` mit komplettem `_save()` auf
-- `_save()` serialisiert den gesamten App-State inkl. Base64-PDFs nach SharedPreferences → 60×/s nicht haltbar
+- `_save()` serialisierte damals den gesamten App-State inkl. Base64-PDFs nach SharedPreferences → 60×/s nicht haltbar *(Base64-PDFs seit 07/2026 aus dem Blob ausgelagert — das Pattern gilt weiter)*
 - Fix: lokaler State während Drag, Persistierung erst auf `onScaleEnd`
 - Pattern für künftige Drag/Skalier-Operationen: niemals jeden Frame persistieren
 
@@ -58,7 +68,7 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 - Noch nicht bewusst entschieden ob Referenz (shared) oder Snapshot (Kopie pro Gig) gewünscht ist → siehe Backlog-Blocker
 
 **Stroke-Save debounced (statt sofort)**
-- Problem: `_save()` serialisierte den ganzen JSON-Blob inkl. aller base64 Chord-Charts synchron bei jedem Pen-Up/Erase → Main-Isolate blockiert → Pointer-Events gedroppt (Striche erschienen als gerade Linie + 1-2s Lag).
+- Problem: `_save()` serialisierte den ganzen JSON-Blob inkl. aller base64 Chord-Charts synchron bei jedem Pen-Up/Erase → Main-Isolate blockiert → Pointer-Events gedroppt (Striche erschienen als gerade Linie + 1-2s Lag). *(Chart-Anteil seit 07/2026 behoben — Charts liegen als Files außerhalb des Blobs; der Blob besteht seither fast nur aus Strichdaten.)*
 - Verifikation: `_save()` in `updateSongStrokes` temporär auskommentiert → Lag komplett weg = Save als alleiniger Täter.
 - Fix: nur `updateSongStrokes` debounced (`_scheduleStrokeSave`, 800ms, Timer resettet pro Aufruf). In-Memory-Update + `notifyListeners` bleiben sofortig. Alle anderen Mutationen sofort → strukturelle Daten immer durable, kleinste Verlust-Fläche.
 - `flushPendingSave` via `WidgetsBindingObserver` in `app.dart` (`.value`-Provider) bei pause/inactive/detached → schließt Verlust-Fenster bis auf Hard-Kill <800ms.
@@ -81,6 +91,35 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 
 **Cross-Screen-Navigation via BandScaffold-Parameter**
 - `initialIndex` (Ziel-Tab) + `initialGig` (pusht GigDetail via `addPostFrameCallback` nach erstem Frame, wenn interner Navigator gemountet ist). Ermöglicht band-übergreifende Startscreen-Widgets, die gezielt in eine Band/Tab springen.
+
+**quickStrokes entfernt** *(07/2026)*
+- Feld war nie von außen beschrieben (`isQuick: true` hatte null Aufrufer)
+- Toter Code im Persistenz-Format ist Risiko → mit dem Chart-Sprint raus
+
+**IDs: Timestamp, kein uuid-Package**
+- Projektweit `DateTime.now().millisecondsSinceEpoch.toString()`
+- Bewusst keine neue Dependency. Grenze: Bulk-Anlage in derselben
+  Millisekunde kollidiert — relevant erst bei "mehrere gleichzeitig hinzufügen".
+
+**Band-Metadaten: ein notes-Freitext statt strukturierter Felder**
+- Strukturierte Felder lohnen erst, wenn ein Feature sie ausliest.
+  Gründungsjahr, Adresse, Steuernummer werden nirgends angezeigt oder gefiltert.
+- Besetzung ist bewusst KEIN Feld, sondern ein eigenes Modell (wie PracticeItem).
+- ⚠ Prefs-Blob ist unverschlüsselt und landet im Nextcloud-Backup —
+  vor IBAN/Steuernummer im notes-Feld bewusst entscheiden.
+
+**Canvas-Performance: drei getrennte Ursachen** *(Recherche 09/2026)*
+- Der alte A≈B-Test (leerer vs. voller Song) variierte die Seitenfülle,
+  nicht die Strichlänge — konnte das O(n²)-Cloning strukturell nicht finden.
+- Ursache 1 (Input): Listen-Kopie + setState pro Pointer-Event
+- Ursache 2 (Render): `shouldRepaint => true`, volles Neuzeichnen pro Event
+- Ursache 3 (Save): 7-MB-Blob synchron auf dem Main-Isolate
+- Reihenfolge: Input → Render → Format → Isolate nur falls dann noch nötig.
+- Referenz: Saber (Flutter-Handschrift-App, Nextcloud-Sync) trennt Input,
+  Rendering und Persistenz in eigene Schichten und rendert mit
+  Level-of-Detail. GPL-3.0 — als Muster lesen, Code nicht übernehmen.
+- Impeller ist ab Flutter 3.41 Standard auf Android — die Engine ist nicht
+  die Ursache.
 
 ## UX-/Design-Entscheidungen
 
@@ -194,7 +233,7 @@ g['setting'] ?? (g['isOutdoor'] == true ? 'Outdoor' : '')
 
 **PDF im Live-Modus: Properties müssen durchgereicht werden**
 - DrawingCanvas hat ChordChart-Properties mit Defaults (`null`, `0.0`, `1.0`)
-- Im Live-Modus wurden sie nicht übergeben → Chart unsichtbar, weil `chordChartBase64 == null`
+- Im Live-Modus wurden sie nicht übergeben → Chart unsichtbar, weil `chordChartFile == null`
 - Lehre: bei Widget-Erweiterungen alle Aufrufer prüfen, ob neue Properties durchgereicht werden müssen
 
 **Canvas-Strich-Cloning O(n²) (bekannt, nicht gefixt)**
@@ -211,6 +250,25 @@ g['setting'] ?? (g['isOutdoor'] == true ? 'Outdoor' : '')
 **updateSetlist muss Gigs mitführen**
 - Setliste nur in globaler Liste zu aktualisieren reicht nicht, wenn sie in einem Gig bearbeitet wird
 - `updateSetlist` durchsucht jetzt auch `_gigs[bandId]` und ersetzt per ID
+
+**deleteBand: Chart-Cleanup VOR dem Entfernen der Map-Einträge**
+- Umgekehrt sind die Dateinamen weg, bevor sie gelesen werden → stille
+  Orphan-Files auf Disk, die nie jemand bemerkt.
+
+**Bottom Sheet: Provider einmal capturen, Grid-Context für den Folge-Dialog**
+- Nach dem Sheet-pop ist der sheetContext tot. Das bestehende Setlist-Muster
+  macht es andersherum und funktioniert nur zufällig.
+
+**Fehler-toleranter Loader + Referenz-Entfernung = stiller Datenverlust**
+- `exportBackupJson()`: `loadChart` gibt bei fehlender Datei `null` zurück,
+  `chordChartFile` wird trotzdem entfernt → Song im Backup ohne jede
+  Chart-Referenz, Meldung trotzdem "successful".
+- Lehre: Wo ein Loader Fehler schluckt, darf der Aufrufer die Referenz
+  nicht wegwerfen. Fehlschläge zählen und melden, aber nie das ganze
+  Backup abbrechen — ein unvollständiges Backup schlägt keins.
+
+**Backup umfasst seit der Chart-Migration zwei Artefakte**
+- Prefs-XML allein ist kein vollständiges Backup mehr.
 
 ## Implizites Wissen / Konventionen
 

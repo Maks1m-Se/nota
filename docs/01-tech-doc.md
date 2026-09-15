@@ -3,7 +3,7 @@
 **Projekt:** Nota
 **Repo:** github.com/Maks1m-Se/nota
 **Lokal:** `C:\Git\nota`
-**Letzter Stand:** 05.07.2026
+**Letzter Stand:** 14.09.2026
 
 ## Was ist Nota
 
@@ -70,7 +70,7 @@ flutter run -d R52NC05R33J
 git add . && git commit -m "..." && git push
 ```
 
-**Implementierung via Claude Code:** Multi-File-Features werden mit Claude Code gebaut (CLI, editiert Repo direkt). Guardrails in `CLAUDE.md` (Repo-Root). Dieser Chat bleibt für Sparring/Architektur.
+**Implementierung via Claude Code:** Multi-File-Features werden mit Claude Code gebaut (CLI, editiert Repo direkt). Guardrails in `CLAUDE.md` (Repo-Root). Sparring und Architektur laufen im Nota Management-Hub (siehe Chat-Architektur).
 
 
 ## Daten / Backup
@@ -132,39 +132,32 @@ Danach Größen prüfen — ein fehlgeschlagener Befehl hinterlässt eine 0-Byte
 
 ## Chat-Architektur
 
-Phase 1: ein Chat `Nota` für alles (Code, Bugs, Priorisierung, Architektur). Kein Hub. Details in den Projekt-Anweisungen. Hub erst bei neuen Disziplinen (z.B. Design).
+Phase 2 aktiv seit 09/2026.
 
-### Phase 1 (aktuell): Ein Chat für alles
+### Ebenen
 
-Ein Chat `Nota` deckt Code, Bugs, Refactoring, Priorisierung und Architektur-Entscheidungen ab. Keine Chat-Typ-Trennung, kein dedizierter Hub.
+| Ebene | Chat | Scope |
+|---|---|---|
+| Portfolio | `Project-Setup-Hub` (eigenes Claude-Projekt) | Priorisierung über alle Projekte, Cross-Projekt-Risiken |
+| Projekt | `Nota Management-Hub` | Nota-Priorisierung, Architektur-Entscheidungen, Dispatch in Themen-Chats |
+| Thema | `Canvas-Performance`, künftige weitere | Implementation, Bugs, Refactoring in einem abgegrenzten Bereich |
 
-**Begründung:** Solo-Code-Projekt. Es läuft fast ausschließlich Code-Arbeit, kein echter Dispatch-Bedarf zwischen Disziplinen. Hub + Implementation-Chats wären Overhead.
+### Repo-Zuordnung (entscheidet das Routing)
 
-**Disziplin im Single-Chat:**
-- Scope-Disziplin pro Arbeitssequenz (ein Feature, ein Bug, eine Priorisierung)
-- Bei ~150 Nachrichten Session-Ende einleiten und neuen Chat starten
-- Knowledge-Updates am Ende jeder inhaltlich wichtigen Session
-- **Practice:** Übungsliste pro Band. Items (Text, optional song-gebunden, Prio H/M/N, erledigt). Capture aus Song-AppBar (vorbelegt) + Practice-FAB (Dropdown). Prio-Sort, Erledigt-Sektion, Filter, Swipe-Delete. Amber-Badges in Library + Nav. Model: `lib/models/practice_item.dart`, Screen: `lib/screens/practice/`.
-### Phase 2 (geplant): Hub + Themen-Chats
+| Datei | Repo | Ziel-Chat |
+|---|---|---|
+| `01-tech-doc.md`, `10-backlog.md`, `11-transferwissen.md` | `nota` | Nota Management-Hub |
+| `03-projekte-uebersicht.md` und alle weiteren Hub-Files | `claude-hub` | Project-Setup-Hub |
 
-Wird eingeführt, sobald neue Disziplinen dazukommen, die echten Dispatch-Bedarf erzeugen (z.B. Logo-Design, Marketing). Geplante Struktur:
+### Regel für Session-Ende-Übergaben
 
-- `Nota – Hub` – Session-Planung, Priorisierung, Dispatch zwischen Themen
-- `Nota – Code` – alle Implementation, Bugs, Refactoring
-- `Nota – Design` – Logo, Theming, Visuelles
-- weitere Themen-Chats analog
+Jede Übergabe nennt Ziel-Datei UND Ziel-Repo, nicht nur "Hub". Ohne
+Repo-Angabe ist bei drei Hub-Ebenen nicht entscheidbar, wohin der Text
+geht.
 
-**Beim Phase-2-Switch zu definieren:**
-- Anker-Text-Templates für Cross-Chat-Übergaben (Hub → Themen-Chat, Themen-Chat → Hub)
-- Status-Update-Format (Themen-Chat → Hub, vermutlich session-basiert statt feature-basiert)
-- Anpassung der Projekt-Anweisungen pro Chat (jeder Themen-Chat bekommt eigene Anweisungen mit Scope und Cross-Chat-Hinweisen)
+### Cross-Projekt
 
-### Phase 3: Weitere Themen
-
-Weitere Themen-Chats analog ergänzen, sobald sich Disziplinen herausbilden, die regelmäßig auftauchen und sich gegenseitig stören würden.
-
-### Cross-Projekt-Regel
-
-- Code-Seite von Backup (Flutter ↔ WebDAV) → Nota-Code-Chat (in Phase 1: einfach im `Nota`-Chat)
-- Server-/Infra-Seite (Nextcloud-Konfig, Pi) → Homecloud-Hub, nicht hier duplizieren
+- Code-Seite von Backup (Flutter ↔ WebDAV) → Nota-Themen-Chat
+- Server-/Infra-Seite (Nextcloud, Pi) → Homecloud-Projekt
+- Hardware, Rechner, projektübergreifende Risiken → Project-Setup-Hub
 

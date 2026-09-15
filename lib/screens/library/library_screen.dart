@@ -6,6 +6,7 @@ import '../../models/song.dart';
 import 'song_detail_screen.dart';
 import 'add_song_dialog.dart';
 import 'edit_song_dialog.dart';
+import 'import_songs_screen.dart';
 
 enum SongSortOrder { titleAZ, titleZA, keyAZ, keyZA, createdNewest, createdOldest }
 
@@ -165,11 +166,31 @@ class _LibraryScreenState extends State<LibraryScreen> {
           Expanded(
             child: sorted.isEmpty
                 ? Center(
-                    child: Text(
-                      _searchQuery.isNotEmpty
-                          ? 'No songs match "$_searchQuery"'
-                          : 'No songs yet. Tap + to add one.',
-                      style: const TextStyle(color: AppTheme.textMuted),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _searchQuery.isNotEmpty
+                              ? 'No songs match "$_searchQuery"'
+                              : 'No songs yet. Tap + to add one.',
+                          style: const TextStyle(color: AppTheme.textMuted),
+                        ),
+                        if (_searchQuery.isEmpty) ...[
+                          const SizedBox(height: 12),
+                          TextButton.icon(
+                            onPressed: () {
+                              Navigator.of(context, rootNavigator: true).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ImportSongsScreen(targetBandId: widget.bandId),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.download),
+                            label: const Text('Import from another band'),
+                          ),
+                        ],
+                      ],
                     ),
                   )
                 : ListView.builder(

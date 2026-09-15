@@ -473,6 +473,43 @@ class BandProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Songs zwischen Bands kopieren: Vollkopie mit neuer ID und eigener
+  /// Chart-Datei — Original und Kopie sind danach unabhängig.
+  /// Practice-Items bleiben beim Original. Kein Rollback bei Teilfehlern.
+  /// Rückgabe: Anzahl kopierter Songs + Songs, deren Chart nicht kopiert
+  /// werden konnte (Song selbst ist trotzdem kopiert, ohne Chart).
+  Future<({int copied, int chartFailed})> copySongsToBand(
+    String fromBandId,
+    String toBandId,
+    List<String> songIds,
+  ) async {
+    final source = _songs[fromBandId] ?? const <Song>[];
+    // Timestamp + Index: reiner Timestamp kollidiert im selben Batch.
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final copies = <Song>[];
+    var chartFailed = 0;
+    for (var i = 0; i < songIds.length; i++) {
+      final song = source.where((s) => s.id == songIds[i]).firstOrNull;
+      if (song == null) continue;
+      final newId = '${ts}_$i';
+      final fromFile = song.chordChartFile;
+      String? newFile;
+      if (fromFile != null) {
+        newFile = await ChartStorage.copyChart(fromFile, newId);
+        if (newFile == null) chartFailed++;
+      }
+      // chordChartFile immer explizit setzen (auch null) — die Kopie darf
+      // nie auf die Datei des Originals zeigen, sonst Delete-Hazard.
+      copies.add(song.copyWith(id: newId, chordChartFile: newFile));
+    }
+    if (copies.isEmpty) return (copied: 0, chartFailed: chartFailed);
+    _songs[toBandId] ??= [];
+    _songs[toBandId]!.addAll(copies);
+    _save();
+    notifyListeners();
+    return (copied: copies.length, chartFailed: chartFailed);
+  }
+
   void addSetlist(String bandId, Setlist setlist) {
     _setlists[bandId] ??= [];
     _setlists[bandId]!.add(setlist);

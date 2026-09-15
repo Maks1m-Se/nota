@@ -5,6 +5,7 @@ import '../../models/gig.dart';
 import '../../providers/band_provider.dart';
 import '../../theme/app_theme.dart';
 import '../library/library_screen.dart';
+import '../library/import_songs_screen.dart';
 import '../setlists/setlists_screen.dart';
 import '../gigs/gigs_screen.dart';
 import '../gigs/gig_detail_screen.dart';
@@ -152,6 +153,23 @@ class _BandScaffoldState extends State<BandScaffold> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      // Library hat keine eigene AppBar — Import-Aktion
+                      // daher hier, nur im Library-Tab sichtbar.
+                      if (_selectedIndex == 0) ...[
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.download, color: AppTheme.textPrimary),
+                          tooltip: 'Import songs',
+                          onPressed: () {
+                            Navigator.of(context, rootNavigator: true).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ImportSongsScreen(targetBandId: widget.band.id),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),

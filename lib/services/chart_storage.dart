@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:path_provider/path_provider.dart';
 
 /// Chord-Chart-PNGs als Files im App-Documents-Verzeichnis (charts/).
@@ -34,6 +35,27 @@ class ChartStorage {
       if (!await file.exists()) return null;
       return await file.readAsBytes();
     } catch (_) {
+      return null;
+    }
+  }
+
+  /// Kopiert ein Chart für einen anderen Song (Songs zwischen Bands kopieren).
+  /// Neuer Name nach saveChart-Schema — Kopie hat eine eigene Datei, damit
+  /// deleteChart am Original die Kopie nie mitreißt.
+  /// Fehler-tolerant: fehlende Quelle oder Schreibfehler → null, kein Crash.
+  static Future<String?> copyChart(String fromFileName, String toSongId) async {
+    String? fileName;
+    try {
+      final dir = await _chartsDir();
+      final source = File('${dir.path}/$fromFileName');
+      if (!await source.exists()) return null;
+      fileName = '${toSongId}_${DateTime.now().millisecondsSinceEpoch}.png';
+      await source.copy('${dir.path}/$fileName');
+      return fileName;
+    } catch (e) {
+      debugPrint('ChartStorage.copyChart failed ($fromFileName → $toSongId): $e');
+      // Halb geschriebene Kopie abräumen — sonst Orphan-PNG in charts/.
+      if (fileName != null) await deleteChart(fileName);
       return null;
     }
   }

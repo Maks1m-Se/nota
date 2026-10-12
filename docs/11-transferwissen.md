@@ -42,11 +42,15 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
 - Kompakte Felder, Dialog reicht
 - Konsistenz zwischen Songs und Gigs
 
-**Chat-Architektur: Phasen-Modell statt Hub-from-Day-One**
-- Ursprünglich: Management-Hub + Implementation-Chats pro Feature + optionale Bug-Chats
-- Geändert: aktuell ein Chat für alles, weil Solo-Code-Projekt keinen Dispatch-Bedarf hat
-- Hub kommt zurück, sobald neue Disziplinen (Design, Marketing) dazukommen
-- Trade-off: Single-Chat füllt sich schneller, dafür kein Overhead durch Chat-Wechsel
+**Chat-Architektur: drei Ebenen plus Terminal** (Stand 09/2026)
+- Portfolio-Hub (claude-hub) → Projekt-Hub → Themen-Chats bei
+  Bedarf → Claude Code im Terminal.
+- Verworfen: ein Chat für alles (Phase 1, Mai–Aug 2026), und
+  Implementation-Chat pro Feature (produziert nur Code zum
+  Copy-pasten).
+- Übergaben nennen Ziel-Datei UND Ziel-Repo. 'Hub' allein war am
+  15.09. mehrdeutig und hat eine Übergabe an die falsche Ebene
+  geschickt.
 
 **LiveScreen API: flache Item-Liste mit Pause-Boundaries**
 - Statt `Setlist + List<Song>` nimmt LiveScreen jetzt `List<Setlist> sets + bandId + initialSet/SongIndex`
@@ -120,6 +124,30 @@ Diese Datei konserviert das Warum hinter dem Code. Der Code zeigt was gebaut wur
   Level-of-Detail. GPL-3.0 — als Muster lesen, Code nicht übernehmen.
 - Impeller ist ab Flutter 3.41 Standard auf Android — die Engine ist nicht
   die Ursache.
+
+**Songs zwischen Bands: Vollkopie, keine geteilte Entität**
+- Jede Band hält eigene Song-Objekte mit eigener ID und eigener
+  Chart-Datei. Verworfen: Song + BandSongVersion normalisieren.
+- Grund: Über Bands hinweg sind nur Titel und Artist gleich. Key,
+  Intro/Outro, Solo/Backing, BPM, Notizen und oft das Chart
+  unterscheiden sich. Eine Normalisierung hätte das Modell
+  verdoppelt und jede Call-Site angefasst, um zwei Textfelder
+  einmal statt zweimal zu pflegen.
+- Folge: kein Refcounting auf Chart-Dateien, der Delete-Hazard
+  entsteht nicht.
+- Practice-Items werden nicht mitkopiert. Kein Rückverweis
+  (sourceSongId).
+
+**Song.copyWith braucht ein Sentinel für nullable Felder**
+- Mit ?? lässt sich ein Feld nicht auf null setzen. Schlägt
+  copyChart fehl, muss die Kopie chordChartFile: null bekommen,
+  sonst zeigt sie auf die Datei des Originals.
+- Gilt für bpm, chordChartFile, chordChartBase64.
+
+**Chart-Dateinamen tragen einen Timestamp**
+- Schema ${songId}_${timestamp}.png. Methoden nehmen Dateinamen,
+  nicht songIds (loadChart, deleteChart, copyChart). Die Doku
+  behauptete bis 15.09. das Gegenteil, im Zweifel gilt der Code.
 
 ## UX-/Design-Entscheidungen
 
@@ -270,6 +298,33 @@ g['setting'] ?? (g['isOutdoor'] == true ? 'Outdoor' : '')
 **Backup umfasst seit der Chart-Migration zwei Artefakte**
 - Prefs-XML allein ist kein vollständiges Backup mehr.
 
+**Strich-Cloning-Fix darf nur den laufenden Strich mutieren**
+- Song.copyWith legt die Strokes-Liste neu an, kopiert aber die
+  DrawingStroke-Objekte nicht (nur final-Felder, nie in place
+  verändert). Der Canvas-Fix (mutable Append) darf das nicht
+  brechen, sonst teilen sich Original und Kopie Strichdaten.
+
+**Async-Aktion über mehrere Dateien braucht eine Screen-Sperre**
+- Muster: Button mit Spinner deaktivieren, Eingaben sperren,
+  PopScope gegen die Back-Geste, Provider/Messenger/Navigator vor
+  dem await holen, danach mounted prüfen.
+
+**Screenshots ohne Gerät: Emulator plus Testdaten**
+- AVD Nota_Tablet, Testdaten als Prefs-XML plus Chart-PNGs per
+  adb push (Format aus _load/_save). Handschriftliche Notizen
+  lassen sich nicht glaubwürdig synthetisieren, deshalb fehlt
+  canvas.png.
+- Chart-PNG ohne Titelzeile erzeugen (der Titel steht schon in der
+  App-Kopfzeile). Vor screencap 4 Sekunden warten, sonst liegt das
+  Nav-Overlay im Bild.
+- Die Generator-Skripte lagen im Scratchpad, nicht im Repo. Für
+  neue Screenshots neu erzeugen lassen.
+
+**Claude Code: Freigabe-Gate vor dem Commit greift nicht sicher**
+- Beim Screenshot-Lauf wurde trotz 'zeig mir das Bild, bevor du
+  committest' direkt committet (3fcac17, Auto-Modus).
+- Besser: 'Führ kein git commit aus, schlag die Befehle vor'.
+
 ## Implizites Wissen / Konventionen
 
 **Modell-Updates – 4 Stellen prüfen**
@@ -346,5 +401,5 @@ Häufige Fehlerquelle: eine der vier Stellen vergessen.
 
 **Claude Code für Implementierung (ab Juli 2026)**
 - Multi-File-Features über Claude Code (CLI, editiert Repo direkt) statt Copy-paste im Chat — Grund: Copy-paste-Fehler waren wiederholt teuer.
-- Sparring/Architektur/Priorisierung bleiben im `Nota`-Chat.
+- Sparring, Architektur und Priorisierung laufen im Projekt-Hub; Claude Code ist die Standard-Route für alles, was Dateien ändert.
 - Guardrails: `CLAUDE.md` im Repo-Root.

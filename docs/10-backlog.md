@@ -1,12 +1,12 @@
 # Nota – Backlog
 
-**Letzter Stand:** 11.09.2026
+**Letzter Stand:** 12.10.2026
 
 ## Aktuell in Arbeit
 
-*Nichts. Letztes Feature: Band-Management Stufe 1+2 (Anlegen/Edit/Delete).*
+*Nichts. Zuletzt: Songs zwischen Bands kopieren (15.09.), README mit Screenshots (12.10.).*
 
-**Nächster Schritt:** Stroke-Performance-Sprint (größter Hebel).
+**Nächster Schritt:** Architektur-Scan, dann Canvas-Sprint (siehe unten). Nicht ohne stabilen Rechner starten.
 
 ## ⚠ Offene Architektur-Entscheidung (BLOCKER für Gig-Setlist-Bearbeitung)
 
@@ -26,12 +26,15 @@
 - [ ] Setlists-Screen Sortierung (Parität mit Library)
 - [ ] Library Alphabet-Quick-Nav-Leiste (vertikal, bei alphabetischer + Key-Sortierung)
 - [ ] Setlist-Copy-Rename defekt: Umbenennen kopierter Setlisten wirkt nicht. War als erledigt geführt → Regression oder nie sauber gefixt. Verdacht: `updateSetlist` trifft die Kopie-Instanz nicht / Rename schreibt auf falsche ID. Nächste Sequenz, hypothesengetrieben.
-- [ ] Unit-Tests für BandProvider-Persistenz vor dem Stroke-Format-Change: `_load`-Migration (alt→neu), `exportBackupJson` bei fehlender Chart-Datei, `_save`/`_load`-Round-Trip, `deleteBand`-Cleanup. Prüfen, ob `ChartStorage` dafür injizierbar werden muss.
+- [ ] Unit-Tests für BandProvider-Persistenz vor dem Stroke-Format-Change: `_load`-Migration (alt→neu), `exportBackupJson` bei fehlender Chart-Datei, `_save`/`_load`-Round-Trip, `deleteBand`-Cleanup. Prüfen, ob `ChartStorage` dafür injizierbar werden muss. Davon getrennt: Benchmark-Tests. Ursache 1 (Input, O(n²)-Cloning) und Ursache 3 (Save/jsonEncode) lassen sich in flutter test messen, vorher/nachher. Ursache 2 (Render) nur am Gerät mit flutter run --profile und DevTools-Timeline. Der alte A≈B-Test variierte die Seitenfülle statt der Strichlänge, der Benchmark muss die Strichlänge variieren.
 - [ ] Canvas-Performance: Strich-Cloning O(n²) → mutable Append (verspätete Striche / gerade Linien bei langem Schreiben) Zusätzlich zum Cloning läuft bei jedem Pointer-Event ein `setState` (kompletter Widget-Rebuild) — Fix über `ValueNotifier` für den laufenden Strich.
 - [ ] **Render-Pfad Canvas** — `shouldRepaint => true` repaintet alle Striche + Hintergrund + Chart bei jedem Event. Fix: Zwei-Schichten-Painter (fertige Striche einmal in ui.Picture gecacht, nur aktiver Strich live) + RepaintBoundary. Kein Format-Change.
-- [ ] Canvas Rest-Lag: periodische Save-Spikes bleiben. **Diagnose korrigiert (06.07.):** NICHT die Charts — der Blob (4,6 MB gemessen am Gerät) ist zu 99 % Strokes-JSON. Ursache: `DrawingStroke.toJson` schreibt jeden Punkt als `{"x":123.456789…,"y":…}` mit voller Double-Präzision (~66 chars/Punkt), dazu `widths` als volle Doubles. Fix ranked: (1) Koordinaten + Widths bei Serialisierung auf 1 Nachkommastelle runden (0,1 px unter Stift-Auflösung, ~1,5 MB, trivial, altes Format bleibt lesbar); (2) kompakte Punkt-Codierung (`[x,y]`-Arrays statt Objekte, ~40 % weniger, braucht Backwards-Load für beide Formate); (3) Isolate-Encoding — erst wenn (1)+(2) nicht reichen. Null Daten-Risiko. **Update 11.09.:** Blob jetzt 6,97 MB gemessen, 0 Base64-Reste — Diagnose bestätigt. Reihenfolge im Sprint aber: erst Strich-Cloning, dann Render-Pfad, dann dieser Punkt. Die Save-Spikes sind die periodische Hängerei, nicht die Hängerei beim Zeichnen selbst. **Kopplung:** NIEDRIG "Canvas-Koordinaten relativ speichern" ändert dieselbe Datenstruktur. Beide zusammen in EINER Migration umsetzen — ein Backup, ein Geräte-Test, ein Risikofenster.
+- [ ] Canvas Rest-Lag: periodische Save-Spikes bleiben. **Diagnose korrigiert (06.07.):** NICHT die Charts — der Blob (4,6 MB gemessen am Gerät) ist zu 99 % Strokes-JSON. Ursache: `DrawingStroke.toJson` schreibt jeden Punkt als `{"x":123.456789…,"y":…}` mit voller Double-Präzision (~66 chars/Punkt), dazu `widths` als volle Doubles. Fix ranked: (1) Koordinaten + Widths bei Serialisierung auf 1 Nachkommastelle runden (0,1 px unter Stift-Auflösung, ~1,5 MB, trivial, altes Format bleibt lesbar); (2) kompakte Punkt-Codierung (`[x,y]`-Arrays statt Objekte, ~40 % weniger, braucht Backwards-Load für beide Formate); (3) Isolate-Encoding — erst wenn (1)+(2) nicht reichen. Null Daten-Risiko. **Update 11.09.:** Blob jetzt 6,97 MB gemessen, 0 Base64-Reste — Diagnose bestätigt. Reihenfolge im Sprint aber: erst Strich-Cloning, dann Render-Pfad, dann dieser Punkt. Die Save-Spikes sind die periodische Hängerei, nicht die Hängerei beim Zeichnen selbst. **Kopplung:** NIEDRIG "Canvas-Koordinaten relativ speichern" ändert dieselbe Datenstruktur. Beide zusammen in EINER Migration umsetzen — ein Backup, ein Geräte-Test, ein Risikofenster. Update 15.09.: Blob 8,39 MB nach dem Kopieren einer Band (+1,41 MB / +20 %). Song-Kopien skalieren die Strichdaten linear, jede weitere Band macht den Save-Sprint dringender.
 - [ ] **Export: stiller Datenverlust** — `exportBackupJson()` band_provider.dart:376-382: bei fehlgeschlagenem `loadChart` wird `chordChartFile` trotzdem entfernt (remove außerhalb des if). Backup meldet "successful". Aktuell latent (1 Referenz = 1 Datei). Fix: Referenz behalten + Fehlschläge im UI melden, Backup nie ganz abbrechen.
-- [ ] Songs zwischen Bands kopieren — Achtung: Chart-File muss mitkopiert werden (Dateiname = songId), sonst Delete-Hazard.
+- [ ] Live-Layout/Design optimieren. Vom User als Punkt 3 der Prioritäten gesetzt (nach Songs-Transfer und Stroke-Lag). Konkretisierung nach den Gig-Erfahrungen, siehe Gig-Eintrag.
+- [ ] Gig-Erfahrungen vom 18.09. erfassen: was hat im Live-Einsatz gestört oder gefehlt? Input für Live-Layout und Canvas.
+- [ ] CLAUDE.md-Regel invertieren: 'Neue Songs/Gigs/Setlists: alle Felder explizit setzen (kein copy-with)' war der Workaround für das fehlende copyWith. Seit 15.09. existiert Song.copyWith. copyWith für Band/Setlist/Gig fehlt noch.
+- [ ] Vor dem Canvas-Sprint: Architektur-Scan mit /mattpocock-skills:improve-codebase-architecture. Zweimal untergegangen.
 
 ## Prio MITTEL
 
@@ -70,6 +73,8 @@
 - [ ] Delete-Dialog: "12 songs (incl. chord charts)" — Zählung präzisieren
 - [ ] RAM-Peak beim Export (alle Charts gleichzeitig als Base64 im Speicher)
 - [ ] Flutter 3.41.6 + 38 Packages veraltet — eigener Sprint, nicht nebenbei
+- [ ] README: canvas.png am Tablet aufnehmen, Abschnitt ergänzen. Optional gig.png neu mit kürzerem Bandnamen ('Crimson H…' ist abgeschnitten).
+- [ ] Import-Screen ist englisch, seine SnackBar deutsch. Teil des bestehenden Sprach-Mix-Eintrags.
 
 ## Offene Fragen
 
@@ -83,7 +88,9 @@
 
 ## Erledigt (chronologisch absteigend)
 
-**2026 (September):**
+**2026 (September/Oktober):**
+- README.md mit zwei Screenshots (Emulator, Testdaten), 12.10.
+- Songs zwischen Bands kopieren (4 Phasen via Claude Code): Song.copyWith mit Sentinel, ChartStorage.copyChart (räumt halb geschriebene Kopien ab), BandProvider.copySongsToBand (Batch, ein _save, IDs ${ts}_$i), Import-Screen mit Doppel-Tap-Sperre. Geräte-Test: Kopien unabhängig, Löschen reißt kein fremdes Chart mit.
 - Band-Management: Anlegen, Bearbeiten, Löschen (inkl. Chart-File-Cleanup)
 - adb-PATH dauerhaft gesetzt
 
@@ -91,7 +98,7 @@
 - Practice-Badge cross-band
 - Chord Charts → Files (via Claude Code, 5 Phasen): Chart-PNGs raus aus dem Prefs-Blob, jetzt als Files in `Documents/charts/` (ChartStorage-Service, path_provider). Blob referenziert nur noch Dateinamen. `_load`-Migration Base64→File (greift auch nach Backup-Restore), Lösch-Hygiene in `updateSong`/`deleteSong`, Export-Serializer hält `nota_backup.json` formatidentisch (Base64 embedded). `quickStrokes`-Feld komplett entfernt. Nebenfix: mehrere `Song(...)`-Call-Sites kopierten `chordChartBase64`/`canvasBackground` nicht mit → jedes Metadaten-Edit verwarf das Chart; jetzt alle Felder explizit gesetzt. Geräte-Test bestätigte Migration/Import/Löschung — **aber** Save-Spikes NICHT behoben (siehe HOCH: Blob ist Strokes-JSON, nicht Charts).
 - Canvas-Save-Debounce: Stroke-Save aus dem Hot-Path (800ms + Lifecycle-Flush) → Zeichen-Lag massiv reduziert. Diagnose: `_save()` auskommentiert → Lag weg = Save als Täter bestätigt.
-- Pre-Gig-Sprint: Library-Suche, Duplizieren (Songs/Setlists/Gigs), Drag&Drop (echt — war vorher fälschlich als erledigt geführt), Edit-Dialog, Vollbild-Fix, Live-Empty-Guard
+- Pre-Gig-Sprint: Library-Suche, Duplizieren (Setlists), Drag&Drop (echt — war vorher fälschlich als erledigt geführt), Edit-Dialog, Vollbild-Fix, Live-Empty-Guard
 - To-Practice Feature (via Claude Code, 4 Phasen): PracticeItem-Model, band-scoped Provider-Layer (backwards-compatible Load + inneres try-catch), Capture-Dialog (2 Entry-Points), Practice-Screen (Prio-Sort, Prio-Cycle, Erledigt-Sektion, Filter, Swipe-Delete), Amber-Badges (Library + Nav), Orphan-Delete (Items sterben mit dem Song).
 - Startscreen-Dashboard (via Claude Code, 3 Phasen): Gig-Tag-Bug gefixt (tages-genauer Vergleich, HEUTE als dritter Zustand in Primary), zentrale Datums-Getter im Provider, `BandScaffold.initialIndex/initialGig`, Gig- + Practice-Widget (cross-band, Practice direkt abhakbar), Band-Grid 3-spaltig.
 

@@ -3,7 +3,7 @@
 **Projekt:** Nota
 **Repo:** github.com/Maks1m-Se/nota
 **Lokal:** `C:\Git\nota`
-**Letzter Stand:** 14.09.2026
+**Letzter Stand:** 12.10.2026
 
 ## Was ist Nota
 
@@ -54,6 +54,8 @@ lib/
 
 - **Band-Management:** Anlegen über "+"-Kachel im Grid, Long-Press → Bottom Sheet (Edit/Delete). `add_band_dialog.dart`, `edit_band_dialog.dart`. Delete räumt Songs, Setlists, Gigs, Practice-Items und Chart-Files ab.
 
+- **Songs zwischen Bands kopieren:** import_songs_screen.dart, Einstieg aus Library-Empty-State und Top-Bar-Icon (nur im Library-Tab, in band_scaffold.dart). Vollkopie mit neuer songId und eigener Chart-Datei, Original und Kopie danach unabhängig. Practice-Items bleiben beim Original.
+
 ## Setup / Deployment
 
 **Hardware:** Windows PC unter `C:\Git\nota`, Tablet via USB.
@@ -71,6 +73,9 @@ git add . && git commit -m "..." && git push
 ```
 
 **Implementierung via Claude Code:** Multi-File-Features werden mit Claude Code gebaut (CLI, editiert Repo direkt). Guardrails in `CLAUDE.md` (Repo-Root). Sparring und Architektur laufen im Nota Management-Hub (siehe Chat-Architektur).
+
+- README.md im Repo-Root, Screenshots unter docs/screenshots/ (live-mode.png, gig.png; canvas.png fehlt noch).
+- Emulator: AVD 'Nota_Tablet' (2560x1600, Seitenverhältnis weicht vom Tab S6 Lite ab). Für Screenshots ohne Gerät nutzbar.
 
 
 ## Daten / Backup
@@ -102,7 +107,7 @@ Danach Größen prüfen — ein fehlgeschlagener Befehl hinterlässt eine 0-Byte
 - Rotation für Chord Chart bewusst weggelassen, nachrüstbar.
 - Nextcloud Backup nur manuell.
 - Backup-JSON enthält Charts weiterhin als Base64 (Export-Format bewusst unverändert) → Backup-Datei wächst mit Chart-Zahl.
-- Prefs-Blob ~7 MB durch Strichdaten (volle Double-Präzision, Key-Namen pro Punkt) → Save-Spikes.
+- Prefs-Blob 8,4 MB, fast nur Strichdaten (volle Double-Präzision) → Save-Spikes. Gemessen 15.09. nach dem Kopieren einer Band, vorher 6,97 MB. Song-Kopien vervielfachen Strichdaten 1:1.
 - Mehrseitige PDFs nicht unterstützt (nur erste Seite).
 
 ## Designprinzipien

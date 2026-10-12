@@ -1,27 +1,27 @@
 # Nota
 
-Setlist-Manager für Musiker, gebaut für die Bühne. Flutter, Tablet.
+Setlist manager for musicians, built for the stage. Flutter, tablet.
 
-![Nota Live-Modus mit Setlisten-Sidebar und Chord Chart](docs/screenshots/live-mode.png)
+![Nota live mode with setlist sidebar and chord chart](docs/screenshots/live-mode.png)
 
-## Warum
+## Why
 
-Papier-Setlisten und PDF-Reader taugen auf der Bühne nicht. Nota zeigt Setliste, Songinfos und handschriftliche Notizen gleichzeitig, mit festen Positionen für Tonart und Solo-Markierung, damit das Auge beim Songwechsel nicht suchen muss.
+Paper setlists and PDF readers don't hold up on stage. Nota shows setlist, song info, and handwritten notes at the same time, with fixed positions for key and solo markers so the eye doesn't have to search on a song change.
 
 ## Features
 
-- Bands, Songs, Setlisten, Gigs
-- Handschriftliche Notizen pro Song (S Pen oder Finger), Chord Charts als PDF-Hintergrund
-- Live-Modus in drei Varianten (Vollbild, mit Sidebar, nur Setliste), Swipe-Navigation
-- Mehrere Sets pro Gig mit Pause-Screen dazwischen
-- Übungsliste pro Song
-- Backup und Restore über eigenen Nextcloud-Server
+- Bands, songs, setlists, gigs
+- Handwritten notes per song (S Pen or finger), chord charts as PDF background
+- Live mode in three variants (fullscreen, with sidebar, setlist only), swipe navigation
+- Multiple sets per gig with a pause screen in between
+- Practice list per song
+- Backup and restore via your own Nextcloud server
 
 ## Screenshots
 
-![Nota Gig-Detail mit zwei Setlisten](docs/screenshots/gig.png)
+![Nota gig detail with two setlists](docs/screenshots/gig.png)
 
-Gig-Detail mit beiden Sets einer Show.
+Gig detail with both sets of a show.
 
 ## Stack
 
@@ -29,15 +29,15 @@ Gig-Detail mit beiden Sets einer Show.
 - Provider ^6.1.5+1
 - shared_preferences ^2.5.5
 
-## Entwicklung
+## Development
 
 ```bash
 flutter pub get
 flutter run
 ```
 
-Zielgerät: Samsung Galaxy Tab S6 Lite, Landscape. Die App ist auf Tablet-Querformat ausgelegt.
+Target device: Samsung Galaxy Tab S6 Lite, landscape. The app is designed for tablet landscape layout.
 
 ## Status
 
-Persönliches Projekt, im Live-Einsatz, kein Release, keine Beiträge gesucht.
+Personal project, in live use, no release, not looking for contributions.
